@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include <GameUI.h>
+#include "include/GameUI.h"
+
 
 int main() {
     // Initialize game data
@@ -8,10 +9,12 @@ int main() {
 
     // Display the main menu and handle user input
     int choice;
+    welcomeArt();
     do {
-        displayMenu();
-        choice = retrieveUserInput();
-
+        
+        
+        choice = displayMenu();
+        
         validateUserChoice(choice);
 
         switch (choice) {

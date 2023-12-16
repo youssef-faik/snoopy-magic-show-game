@@ -5,6 +5,7 @@
 #ifndef SNOOPY_GAME_DIRECTION_H
 #define SNOOPY_GAME_DIRECTION_H
 
+
 typedef enum {
     UP,
     DOWN,

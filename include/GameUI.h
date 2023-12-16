@@ -2,13 +2,35 @@
 // Created by youss on 12/15/2023.
 //
 
+
+#include<conio.h>
 #ifndef SNOOPY_GAME_GAMEUI_H
 #define SNOOPY_GAME_GAMEUI_H
 
+#define UP_ARROW 72
+
+	#define LEFT_ARROW 75
+	#define RIGHT_ARROW 77
+	#define DOWN_ARROW 80
+	
+	#define ENTER_KEY 13
+
 #include "GameLogic.h"
 
+// return the option in the menu 
+int menuSelector(int x, int y, int yStart);
+
+// representing the horizontal and vertical coordinates move the cursur
+void gotoxy(int x,int y);
+
+// clear screan 
+void clrscr();
+
+//first page 
+void welcomeArt(void);
+
 // Display the main menu options to the user
-void displayMenu();
+int displayMenu();
 
 // Retrieve the user's
 int retrieveUserInput();

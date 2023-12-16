@@ -8,7 +8,8 @@
 #define MAX_ROWS 10
 #define MAX_COLS 10
 
-typedef struct {
+typedef struct 
+{
     int levelNumber;
     char password[4];
     char board[MAX_ROWS][MAX_COLS];
