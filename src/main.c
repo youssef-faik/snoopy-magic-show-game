@@ -304,17 +304,12 @@ void startNewGame() {
     do {
         numberUpdates = 0;
 
-        // a placeholder value that changes whenever the user taps on another key
-        key = '~';
         if (kbhit()) {
             key = (char) getch();
+            moveSnoopy(key, &snoopyX, &snoopyY, boardGame, &score, updates, &numberUpdates);
         }
 
         fflush(stdin);
-
-        if (key != '~') {
-            moveSnoopy(key, &snoopyX, &snoopyY, boardGame, &score, updates, &numberUpdates);
-        }
 
         if (ballTimer % ballMoveInterval == 0) {
             boardGame[ballX][ballY] = EMPTY;
