@@ -1,5 +1,6 @@
 #include <conio.h>
 #include <stdio.h>
+
 #include <windows.h>
 #include <time.h>
 
@@ -8,6 +9,7 @@
 #define LEFT_ARROW 75
 #define RIGHT_ARROW 77
 #define ENTER_KEY 13
+
 
 #define ROWS 10
 #define COLS 20
@@ -26,6 +28,7 @@ typedef struct {
 
 // main functions declarations
 void startGame();
+
 
 void displayGameRules();
 
