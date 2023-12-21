@@ -27,12 +27,16 @@
 #define ANSI_COLOR_YELLOW  "\x1b[33m"
 #define ANSI_COLOR_BLUE    "\x1b[34m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
 
 #define BIRD_SYMBOL "♫"
 #define SNOOPY_SYMBOL "☺"
 #define BALL_SYMBOL "♂"
 #define INVINCIBLE_BLOC_SYMBOL "☼"
+
+#define UP_ARROW_SYMBOL "↑"
+#define DOWN_ARROW_SYMBOL "↓"
+#define LEFT_ARROW_SYMBOL "←"
+#define RIGHT_ARROW_SYMBOL "→"
 
 typedef struct {
     int x;
@@ -75,6 +79,10 @@ void printGameBoard(char[ROWS][COLS]);
 void delay();
 
 void printSymbol(char value);
+
+void initializeCountdownTimer(int *remainingTime, int initialDuration);
+
+void checkRemainingTimeAndUpdate(int *remainingTime, clock_t *lastCheckTime);
 
 // main program
 int main() {
@@ -203,8 +211,8 @@ void addUpdate(int x, int y, char newValue, int *index, Update updates[]) {
 void moveSnoopy(char key, int *snoopyX, int *snoopyY, char board[ROWS][COLS], int *score, Update updates[],
                 int *updateIndex) {
     int number;
-    const int x = 6;
-    const int y = -2;
+    const int SCORE_X = 2;
+    const int SCORE_Y = -2;
 
     switch (key) {
         case UP_ARROW:
@@ -214,7 +222,7 @@ void moveSnoopy(char key, int *snoopyX, int *snoopyY, char board[ROWS][COLS], in
 
                     number = *score;
                     char charRepresentation = '0' + number;
-                    addUpdate(x, y, charRepresentation, updateIndex, updates);
+                    addUpdate(SCORE_X, SCORE_Y, charRepresentation, updateIndex, updates);
                 }
 
                 if (board[*snoopyX - 1][*snoopyY] != INVINCIBLE_BLOC) {
@@ -232,7 +240,7 @@ void moveSnoopy(char key, int *snoopyX, int *snoopyY, char board[ROWS][COLS], in
 
                     number = *score;
                     char charRepresentation = '0' + number;
-                    addUpdate(x, y, charRepresentation, updateIndex, updates);
+                    addUpdate(SCORE_X, SCORE_Y, charRepresentation, updateIndex, updates);
                 }
 
                 if (board[*snoopyX + 1][*snoopyY] != INVINCIBLE_BLOC) {
@@ -250,7 +258,7 @@ void moveSnoopy(char key, int *snoopyX, int *snoopyY, char board[ROWS][COLS], in
 
                     number = *score;
                     char charRepresentation = '0' + number;
-                    addUpdate(x, y, charRepresentation, updateIndex, updates);
+                    addUpdate(SCORE_X, SCORE_Y, charRepresentation, updateIndex, updates);
                 }
 
                 if (board[*snoopyX][*snoopyY - 1] != INVINCIBLE_BLOC) {
@@ -269,7 +277,7 @@ void moveSnoopy(char key, int *snoopyX, int *snoopyY, char board[ROWS][COLS], in
                     number = *score;
                     char charRepresentation = '0' + number;
 
-                    addUpdate(x, y, charRepresentation, updateIndex, updates);
+                    addUpdate(SCORE_X, SCORE_Y, charRepresentation, updateIndex, updates);
                 }
 
                 if (board[*snoopyX][*snoopyY + 1] != INVINCIBLE_BLOC) {
@@ -315,11 +323,7 @@ void printSymbol(char value) {
 }
 
 void startNewGame() {
-    clearScreen();
-    printf("New game\n\n");
-
     int score = 0;
-    printf("Score: %d |♥ : 0 | ★ :3\n", score);
 
     int snoopyX = 0, snoopyY = 2;
     int ballX = 6, ballY = 4;
@@ -327,6 +331,18 @@ void startNewGame() {
     int ballTimer = 0;
     int ballMoveInterval = 10;
     int directionX = 1, directionY = 1;
+
+    int remainingTime, initialDuration = 60;
+    initializeCountdownTimer(&remainingTime, initialDuration);
+    clock_t lastCheckTime = clock();
+
+    clearScreen();
+    printf("New game\n\n");
+    printf(
+            ANSI_COLOR_BLUE"♫" ANSI_COLOR_RESET ": %d  | "
+            ANSI_COLOR_RED"♥" ANSI_COLOR_RESET": 3  | "
+            ANSI_COLOR_GREEN "★"ANSI_COLOR_RESET": %d\n", score, initialDuration
+    );
 
     char boardGame[ROWS][COLS];
     initializeBoardGame(boardGame, snoopyX, snoopyY, ballX, ballY);
@@ -336,9 +352,13 @@ void startNewGame() {
     Update updates[100000];
 
     // Get user input for direction
-    char key;
-    printf("\nEnter direction (UP/DOWN/LEFT/RIGHT) or tape the \"q\" to quit. ");
-    do {
+    char key = ' ';
+    printf("\nEnter direction (" UP_ARROW_SYMBOL"/" DOWN_ARROW_SYMBOL "/" RIGHT_ARROW_SYMBOL "/" LEFT_ARROW_SYMBOL ") or tape the \"q\" to quit. ");
+    while (key != 'q' && score < 4 && remainingTime >= 0) {
+        checkRemainingTimeAndUpdate(&remainingTime, &lastCheckTime);
+        addUpdate(ballY, ballX, BALL, &numberUpdates, updates);
+
+
         numberUpdates = 0;
 
         if (kbhit()) {
@@ -364,11 +384,16 @@ void startNewGame() {
         updateElements(boardGame, updates, numberUpdates);
 
         delay();
-    } while (key != 'q' && score < 4);
+    }
 
     if (score == 4) {
         moveCursor(0, 17);
         printf("Congrats! You Won this level!                                   \n");
+    }
+
+    if (score < 4 && remainingTime < 0) {
+        moveCursor(0, 17);
+        printf("Time is up!                                                       \n");
     }
 
     printf("\nPress Any Key To Go Back to The Menu Screen...");
@@ -523,3 +548,27 @@ void printGameBoard(char boardGame[ROWS][COLS]) {
     }
     printf("╚════════════════════╝\n");
 }
+
+void initializeCountdownTimer(int *remainingTime, int initialDuration) {
+    *remainingTime = initialDuration;
+}
+
+void checkRemainingTimeAndUpdate(int *remainingTime, clock_t *lastCheckTime) {
+    clock_t currentTime = clock();
+    double timeElapsed = ((double) (currentTime - *lastCheckTime)) / CLOCKS_PER_SEC;
+    const int TIME_X = 20;
+    const int TIME_Y = 3;
+
+    if (timeElapsed >= 1.0) {
+        *lastCheckTime = currentTime;
+        if (*remainingTime >= 0) {
+            moveCursor(TIME_X, TIME_Y);
+            printf("%d    ", *remainingTime);
+
+            moveCursor(0, 18);
+            (*remainingTime)--;
+        }
+    }
+}
+
+
