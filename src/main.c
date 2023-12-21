@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <windows.h>
 #include <time.h>
-#include <unistd.h>
 
 #define UP_ARROW 72
 #define DOWN_ARROW 80
@@ -19,82 +18,89 @@
 #define BALL 'O'
 #define INVINCIBLE_BLOC '#'
 
-// typedef struct Balle
-// {
-//     int x;
-//     int y;
-//     int directionX;
-//     int directionY;
-// } t_balle;
+typedef struct {
+    int x;
+    int y;
+    char newValue;
+} Update;
 
 // main functions declarations
 void startGame();
+
 void displayGameRules();
+
 void startNewGame();
+
 void loadSavedGame();
+
 void displayLevels();
+
 void displayRecordedScores();
+
 void displayGameControls();
+
 void quitGame();
 
 // helper functions declarations
 void displayWelcomeBanner();
+
 void clearScreen();
+
 char waitForKeyHit();
+
 int displayMenuOption();
+
 int menuSelector(int, int, int);
+
 void moveCursor(int, int);
+
 void printGameBoard(char[ROWS][COLS]);
-void moveObject(int *, int, int, int, int, char[ROWS][COLS], char);
+
+void delay();
 
 // main program
-int main()
-{
+int main() {
     startGame();
     return 0;
 }
 
 // main functions implementations
-void startGame()
-{
+void startGame() {
     int selectedOption;
 
-    do
-    {
+    do {
         displayWelcomeBanner();
         selectedOption = displayMenuOption();
 
-        switch (selectedOption)
-        {
-        case 0:
-            displayGameRules();
-            break;
-        case 1:
-            startNewGame();
-            break;
-        case 2:
-            loadSavedGame();
-            break;
-        case 3:
-            displayLevels();
-            break;
-        case 4:
-            displayRecordedScores();
-            break;
-        case 5:
-            displayGameControls();
-            break;
-        case 6:
-            quitGame();
-            break;
-        default:
-            printf("Invalid choice. Please try again.\n");
+        switch (selectedOption) {
+            case 0:
+                displayGameRules();
+                break;
+            case 1:
+                startNewGame();
+                break;
+            case 2:
+                loadSavedGame();
+                break;
+            case 3:
+                displayLevels();
+                break;
+            case 4:
+                displayRecordedScores();
+                break;
+            case 5:
+                displayGameControls();
+                break;
+            case 6:
+                quitGame();
+                break;
+            default:
+                printf("Invalid choice. Please try again.\n");
         }
     } while (selectedOption != 6);
 }
 
-void displayGameRules()
-{
+void displayGameRules() {
     clearScreen();
 
     printf("Game rules\n\n");
@@ -109,23 +115,25 @@ void displayGameRules()
     waitForKeyHit();
 }
 
-void moveBallDiagonally(int *ballX, int *ballY, int *directionX, int *directionY, char boardGame[ROWS][COLS])
-{
-    // Update ball's position based on direction
+void moveBallDiagonally(int *ballX, int *ballY, int *directionX, int *directionY, char boardGame[ROWS][COLS]) {
     int nextX = *ballX + *directionX;
     int nextY = *ballY + *directionY;
 
     // Collision checks
-    if (nextX < 0 || nextX >= ROWS)
-    {
+    if (nextX < 0 || nextX >= ROWS) {
         *directionX = -*directionX;
     }
-    if (nextY < 0 || nextY >= COLS)
-    {
+    if (nextY < 0 || nextY >= COLS) {
         *directionY = -*directionY;
     }
-    if (boardGame[nextX][nextY] == BIRD || boardGame[nextX][nextY] == SNOOPY)
-    {
+
+    if (boardGame[nextX][nextY] == BIRD || boardGame[nextX][nextY] == SNOOPY) {
+        *directionX = -*directionX;
+        *directionY = -*directionY;
+    }
+
+    if (boardGame[nextX - *directionX][nextY] == INVINCIBLE_BLOC &&
+        boardGame[nextX][nextY - *directionY] == INVINCIBLE_BLOC) {
         *directionX = -*directionX;
         *directionY = -*directionY;
     }
@@ -135,263 +143,312 @@ void moveBallDiagonally(int *ballX, int *ballY, int *directionX, int *directionY
     *ballY += *directionY;
 }
 
-void startNewGame()
-{
-    clearScreen();
-    printf("Start New game\n\n");
-
-    int score = 0;
-    int snoopyX = 4, snoopyY = 9;
-    int ballX = 7, ballY = 17;
-
-    //? Initialize the entire matrix with zeros
-    char boardGame[ROWS][COLS];
+void initializeBoardGame(char board[ROWS][COLS], int snoopyX, int snoopyY, int ballX, int ballY) {
     int i, j;
-    for (i = 0; i < ROWS; i++)
-    {
-        for (j = 0; j < COLS; j++)
-        {
-            boardGame[i][j] = EMPTY;
+    for (i = 0; i < ROWS; i++) {
+        for (j = 0; j < COLS; j++) {
+            board[i][j] = EMPTY;
         }
     }
 
-    //? snoopy
-    boardGame[snoopyX][snoopyY] = SNOOPY;
-
-    //? ball
-    boardGame[ballX][ballY] = BALL;
+    board[snoopyX][snoopyY] = SNOOPY;
+    board[ballX][ballY] = BALL;
 
     //? birds
-    boardGame[0][0] = BIRD;
-    boardGame[0][COLS - 1] = BIRD;
-    boardGame[ROWS - 1][0] = BIRD;
-    boardGame[ROWS - 1][COLS - 1] = BIRD;
+    board[0][0] = BIRD;
+    board[0][COLS - 1] = BIRD;
+    board[ROWS - 1][0] = BIRD;
+    board[ROWS - 1][COLS - 1] = BIRD;
 
     //? obstacles
-    boardGame[4][4] = INVINCIBLE_BLOC;
-    boardGame[4][5] = INVINCIBLE_BLOC;
-    boardGame[5][6] = INVINCIBLE_BLOC;
-    boardGame[6][7] = INVINCIBLE_BLOC;
-    boardGame[0][1] = INVINCIBLE_BLOC;
-    boardGame[0][COLS - 2] = INVINCIBLE_BLOC;
-    boardGame[1][COLS - 2] = INVINCIBLE_BLOC;
+    board[4][4] = INVINCIBLE_BLOC;
+    board[4][5] = INVINCIBLE_BLOC;
+    board[5][6] = INVINCIBLE_BLOC;
+    board[6][7] = INVINCIBLE_BLOC;
+    board[0][1] = INVINCIBLE_BLOC;
+    board[0][COLS - 2] = INVINCIBLE_BLOC;
+    board[1][COLS - 2] = INVINCIBLE_BLOC;
+}
 
-    // Print the matrix in the specified format
-    printGameBoard(boardGame);
+void addUpdate(int x, int y, char newValue, int *index, Update updates[]) {
+    updates[*index].newValue = newValue;
+    updates[*index].x = x;
+    updates[*index].y = y;
 
-    // Time-based ball movement variables
-    int ballTimer = 0;
-    int ballMoveInterval = 1; // Move every second
-    int directionX = 1, directionY = 1;
+    (*index)++;
+}
 
-    // Get user input for direction
-    char key;
-    do
-    {
-        printf("\nPlayer Score: %d", score);
-        printf("\nEnter direction (UP/DOWN/LEFT/RIGHT/q): ");
-        // key = waitForKeyHit();
-        fflush(stdin);
+void moveSnoopy(char key, int *snoopyX, int *snoopyY, char board[ROWS][COLS], int *score, Update updates[],
+                int *updateIndex) {
+    int number;
+    const int x = 6;
+    const int y = -2;
 
-        // Adjust the position based on user input
-        switch (key)
-        {
+    switch (key) {
         case UP_ARROW:
-            if (snoopyX > 0)
-            {
-                if (boardGame[snoopyX - 1][snoopyY] == BIRD)
-                {
-                    score++;
+            if (*snoopyX > 0) {
+                if (board[*snoopyX - 1][*snoopyY] == BIRD) {
+                    (*score)++;
+
+                    number = *score;
+                    char charRepresentation = '0' + number;
+                    addUpdate(x, y, charRepresentation, updateIndex, updates);
                 }
 
-                if (boardGame[snoopyX - 1][snoopyY] != INVINCIBLE_BLOC)
-                {
-                    boardGame[snoopyX][snoopyY] = EMPTY;
-                    boardGame[--snoopyX][snoopyY] = SNOOPY;
+                if (board[*snoopyX - 1][*snoopyY] != INVINCIBLE_BLOC) {
+                    board[*snoopyX][*snoopyY] = EMPTY;
+                    addUpdate(*snoopyY, *snoopyX, EMPTY, updateIndex, updates);
+                    board[--(*snoopyX)][*snoopyY] = SNOOPY;
+                    addUpdate(*snoopyY, *snoopyX, SNOOPY, updateIndex, updates);
                 }
             }
             break;
         case DOWN_ARROW:
-            if (snoopyX < ROWS - 1)
-            {
-                if (boardGame[snoopyX + 1][snoopyY] == BIRD)
-                {
-                    score++;
+            if (*snoopyX < ROWS - 1) {
+                if (board[*snoopyX + 1][*snoopyY] == BIRD) {
+                    (*score)++;
+
+                    number = *score;
+                    char charRepresentation = '0' + number;
+                    addUpdate(x, y, charRepresentation, updateIndex, updates);
                 }
 
-                if (boardGame[snoopyX + 1][snoopyY] != INVINCIBLE_BLOC)
-                {
-                    boardGame[snoopyX][snoopyY] = EMPTY;
-                    boardGame[++snoopyX][snoopyY] = SNOOPY;
+                if (board[*snoopyX + 1][*snoopyY] != INVINCIBLE_BLOC) {
+                    addUpdate(*snoopyY, *snoopyX, EMPTY, updateIndex, updates);
+                    board[*snoopyX][*snoopyY] = EMPTY;
+                    board[++(*snoopyX)][*snoopyY] = SNOOPY;
+                    addUpdate(*snoopyY, *snoopyX, SNOOPY, updateIndex, updates);
                 }
             }
             break;
         case LEFT_ARROW:
-            if (snoopyY > 0)
-            {
-                if (boardGame[snoopyX][snoopyY - 1] == BIRD)
-                {
-                    score++;
+            if (*snoopyY > 0) {
+                if (board[*snoopyX][*snoopyY - 1] == BIRD) {
+                    (*score)++;
+
+                    number = *score;
+                    char charRepresentation = '0' + number;
+                    addUpdate(x, y, charRepresentation, updateIndex, updates);
                 }
 
-                if (boardGame[snoopyX][snoopyY - 1] != INVINCIBLE_BLOC)
-                {
-                    boardGame[snoopyX][snoopyY] = EMPTY;
-                    boardGame[snoopyX][--snoopyY] = SNOOPY;
+                if (board[*snoopyX][*snoopyY - 1] != INVINCIBLE_BLOC) {
+                    addUpdate(*snoopyY, *snoopyX, EMPTY, updateIndex, updates);
+                    board[*snoopyX][*snoopyY] = EMPTY;
+                    board[*snoopyX][--(*snoopyY)] = SNOOPY;
+                    addUpdate(*snoopyY, *snoopyX, SNOOPY, updateIndex, updates);
                 }
             }
             break;
         case RIGHT_ARROW:
-            if (snoopyY < COLS - 1)
-            {
-                if (boardGame[snoopyX][snoopyY + 1] == BIRD)
-                {
-                    score++;
+            if (*snoopyY < COLS - 1) {
+                if (board[*snoopyX][*snoopyY + 1] == BIRD) {
+                    (*score)++;
+
+                    number = *score;
+                    char charRepresentation = '0' + number;
+
+                    addUpdate(x, y, charRepresentation, updateIndex, updates);
                 }
 
-                if (boardGame[snoopyX][snoopyY + 1] != INVINCIBLE_BLOC)
-                {
-                    boardGame[snoopyX][snoopyY] = EMPTY;
-                    boardGame[snoopyX][++snoopyY] = SNOOPY;
+                if (board[*snoopyX][*snoopyY + 1] != INVINCIBLE_BLOC) {
+                    addUpdate(*snoopyY, *snoopyX, EMPTY, updateIndex, updates);
+                    board[*snoopyX][*snoopyY] = EMPTY;
+                    board[*snoopyX][++(*snoopyY)] = SNOOPY;
+                    addUpdate(*snoopyY, *snoopyX, SNOOPY, updateIndex, updates);
                 }
             }
             break;
-        default:
-            printf("Invalid key. use the arrow keys to place the Snoopy character\n");
-        }
+    }
+}
 
-        if (ballTimer % ballMoveInterval == 0)
-        {
-            // Update ball's position diagonally
-            boardGame[ballX][ballY] = EMPTY;
-            moveBallDiagonally(&ballX, &ballY, &directionX, &directionY, boardGame);
-            boardGame[ballX][ballY] = BALL;
-            clearScreen();
-            printGameBoard(boardGame);
-        }
+void updateElements(char boardGame[ROWS][COLS], Update updates[], int numberUpdates) {
+    for (int i = 0; i < numberUpdates; i++) {
+        int x = updates[i].x;
+        int y = updates[i].y;
+        char newValue = updates[i].newValue;
+        boardGame[y][x] = newValue;
 
-        ballTimer++; // Increment timer
-        sleep(1);
-    } while (key != 'q' && score < 4);
-
-    if (score == 4)
-    {
-        printf("Congrats! You Won this level !\n\n");
+        int y_offset = 5;
+        int x_offset = 2;
+        moveCursor(x + x_offset, y + y_offset); // Adjust the coordinates based on your console's cursor positioning
+        printf("%c", newValue);
     }
 
-    printf("Press Any Key To Go Back to The Menu Screen...");
+    moveCursor(0, 18);
+}
+
+void startNewGame() {
+    clearScreen();
+    printf("New game\n\n");
+
+    int score = 0;
+    printf("Score: %d\n", score);
+
+    int snoopyX = 0, snoopyY = 2;
+    int ballX = 6, ballY = 4;
+    // Time-based ball movement variables
+    int ballTimer = 0;
+    int ballMoveInterval = 10;
+    int directionX = 1, directionY = 1;
+
+    char boardGame[ROWS][COLS];
+    initializeBoardGame(boardGame, snoopyX, snoopyY, ballX, ballY);
+    printGameBoard(boardGame);
+
+    int numberUpdates = 0;
+    Update updates[100000];
+
+    // Get user input for direction
+    char key;
+    printf("\nEnter direction (UP/DOWN/LEFT/RIGHT) or tape the \"q\" to quit. ");
+    do {
+        numberUpdates = 0;
+
+        // a placeholder value that changes whenever the user taps on another key
+        key = '~';
+        if (kbhit()) {
+            key = (char) getch();
+        }
+
+        fflush(stdin);
+
+        if (key != '~') {
+            moveSnoopy(key, &snoopyX, &snoopyY, boardGame, &score, updates, &numberUpdates);
+        }
+
+        if (ballTimer % ballMoveInterval == 0) {
+            boardGame[ballX][ballY] = EMPTY;
+            addUpdate(ballY, ballX, EMPTY, &numberUpdates, updates);
+
+            moveBallDiagonally(&ballX, &ballY, &directionX, &directionY, boardGame);
+
+            boardGame[ballX][ballY] = BALL;
+            addUpdate(ballY, ballX, BALL, &numberUpdates, updates);
+        }
+
+        ballTimer++;
+
+        // Update specific elements in the matrix
+        updateElements(boardGame, updates, numberUpdates);
+
+        delay();
+    } while (key != 'q' && score < 4);
+
+    if (score == 4) {
+        moveCursor(0, 17);
+        printf("Congrats! You Won this level!                                   \n");
+    }
+
+    printf("\nPress Any Key To Go Back to The Menu Screen...");
     waitForKeyHit();
 }
 
-void displayGameControls()
-{
+void delay() {
+    struct timespec delay;
+    delay.tv_sec = 0;
+    // 100,000,000 nanoseconds = 0.1 seconds
+    delay.tv_nsec = 100000000 / 4;
+
+    nanosleep(&delay, NULL);
+}
+
+void displayGameControls() {
     clearScreen();
     printf("Controls\n\n");
     printf("Press Any Key To Go Back to The Menu Screen...");
     waitForKeyHit();
 }
 
-void displayRecordedScores()
-{
+void displayRecordedScores() {
     clearScreen();
     printf("Recorded Scores\n\n");
     printf("Press Any Key To Go Back to The Menu Screen...");
     waitForKeyHit();
 }
 
-void displayLevels()
-{
+void displayLevels() {
     clearScreen();
     printf("Levels\n\n");
     printf("Press Any Key To Go Back to The Menu Screen...");
     waitForKeyHit();
 }
 
-void loadSavedGame()
-{
+void loadSavedGame() {
     clearScreen();
     printf("Load Saved Game\n\n");
     printf("Press Any Key To Go Back to The Menu Screen...");
     waitForKeyHit();
 }
 
-void quitGame()
-{
+void quitGame() {
     clearScreen();
     printf("Press Any Key To Go Back to The close the game...");
     waitForKeyHit();
 }
 
+
 // helper functions implementations
-void displayWelcomeBanner()
-{
+void displayWelcomeBanner() {
     clearScreen();
-    printf("   _____                                   \n");
-    printf("  / ___/ ____   ____   ____   ____   __  __\n");
+    printf("___________________________________________\n");
+    printf("   _____                                         \n");
+    printf("  / ___/ ____   ____   ____   ____   __  __      \n");
     printf("  \\__ \\ / __ \\ / __ \\ / __ \\ / __ \\ / / / /\n");
-    printf(" ___/ // / / // /_/ // /_/ // /_/ // /_/ / \n");
-    printf("/____//_/ /_/ \\____/ \\____// .___/ \\__, /  \n");
-    printf("                          /_/     /____/   \n");
-    printf("----------------------------------------------\n");
-    printf("Welcome To The Snoopy Game\n");
+    printf(" ___/ // / / // /_/ // /_/ // /_/ // /_/ /       \n");
+    printf("/____//_/ /_/ \\____/ \\____// .___/ \\__, /     \n");
+    printf("                          /_/     /____/         \n");
+    printf("___________________________________________\n");
 }
 
-void clearScreen()
-{
+void clearScreen() {
     system("cls");
 }
 
-int displayMenuOption()
-{
-    int x = 10, y = 10;
+int displayMenuOption() {
+    int x = 4, y = 10;
     int yStart = y;
-    int selected;
-    //    clearScreen();
+    int selectedOption;
+
     moveCursor(x, y++);
-    printf("1. Game rules\n");
+    printf("- Game rules\n");
     moveCursor(x, y++);
-    printf("2. Start game \n");
+    printf("- Start game \n");
     moveCursor(x, y++);
-    printf("3. Load Saved Game\n");
+    printf("- Load Saved Game\n");
     moveCursor(x, y++);
-    printf("4. Levels \n");
+    printf("- Levels \n");
     moveCursor(x, y++);
-    printf("5. Recorded Scores  \n");
+    printf("- Recorded Scores  \n");
     moveCursor(x, y++);
-    printf("6. Controles \n");
+    printf("- Game Controls \n");
     moveCursor(x, y++);
-    printf("7. Exit\n");
+    printf("- Exit\n");
     moveCursor(x, y++);
-    selected = menuSelector(x, y, yStart);
-    // printf("%d",selected); testing
-    return (selected);
+
+    selectedOption = menuSelector(x, y, yStart);
+
+    return (selectedOption);
 }
 
-char waitForKeyHit()
-{
+char waitForKeyHit() {
     int pressed;
-    while (!kbhit())
-        ;
+    while (!kbhit());
     pressed = getch();
-    // pressed = tolower(pressed);
-    return ((char)pressed);
+    return ((char) pressed);
 }
 
-int menuSelector(int x, int y, int yStart)
-{
+int menuSelector(int x, int y, int yStart) {
     char key;
     int selectedOptionIndex = 0;
     x = x - 2;
     moveCursor(x, yStart);
     printf(">");
-    moveCursor(1, 1);
+    moveCursor(x + 1, yStart);
 
-    do
-    {
+    do {
         key = waitForKeyHit();
-        // printf("%c %d", key, (int)key);
-        if (key == (char)UP_ARROW)
-        {
+
+        if (key == (char) UP_ARROW) {
             moveCursor(x, yStart + selectedOptionIndex);
             printf(" ");
 
@@ -401,9 +458,7 @@ int menuSelector(int x, int y, int yStart)
                 selectedOptionIndex--;
             moveCursor(x, yStart + selectedOptionIndex);
             printf(">");
-        }
-        else if (key == (char)DOWN_ARROW)
-        {
+        } else if (key == (char) DOWN_ARROW) {
 
             moveCursor(x, yStart + selectedOptionIndex);
             printf(" ");
@@ -415,101 +470,24 @@ int menuSelector(int x, int y, int yStart)
             moveCursor(x, yStart + selectedOptionIndex);
             printf(">");
         }
-        // moveCursor(1,1);
-        //        printf("%d", selectedOptionIndex);
-    } while (key != (char)ENTER_KEY);
+
+    } while (key != (char) ENTER_KEY);
     return (selectedOptionIndex);
 }
 
-void moveCursor(int x, int y)
-{
+void moveCursor(int x, int y) {
     printf("%c[%d;%df", 0x1B, y, x);
 }
 
-void printGameBoard(char boardGame[ROWS][COLS])
-{
+void printGameBoard(char boardGame[ROWS][COLS]) {
     int i, j;
-    // Print the top border
-    printf("\n");
-    printf("+-----------------------------------------+\n");
-    // Print the matrix
-    for (i = 0; i < ROWS; i++)
-    {
-        printf("| ");
-        for (j = 0; j < COLS; j++)
-        {
-            printf("%c ", boardGame[i][j]);
+    printf("+--------------------+\n");
+    for (i = 0; i < ROWS; i++) {
+        printf("|");
+        for (j = 0; j < COLS; j++) {
+            printf("%c", boardGame[i][j]);
         }
         printf("|\n");
     }
-    printf("+-----------------------------------------+\n");
-}
-
-void moveObject(int *score, int rows, int cols, int row_position, int col_position, char matrix[10][20], char direction)
-{
-    switch (direction)
-    {
-    case UP_ARROW:
-        if (row_position > 0)
-        {
-            if (matrix[row_position - 1][col_position] == BIRD)
-            {
-                (*score)++;
-            }
-
-            if (matrix[row_position - 1][col_position] != INVINCIBLE_BLOC)
-            {
-                matrix[row_position][col_position] = EMPTY;
-                matrix[--row_position][col_position] = SNOOPY;
-            }
-        }
-        break;
-    case DOWN_ARROW:
-        if (row_position < rows - 1)
-        {
-            if (matrix[row_position + 1][col_position] == BIRD)
-            {
-                (*score)++;
-            }
-
-            if (matrix[row_position + 1][col_position] != INVINCIBLE_BLOC)
-            {
-                matrix[row_position][col_position] = EMPTY;
-                matrix[++row_position][col_position] = SNOOPY;
-            }
-        }
-        break;
-    case LEFT_ARROW:
-        if (col_position > 0)
-        {
-            if (matrix[row_position][col_position - 1] == BIRD)
-            {
-                (*score)++;
-            }
-
-            if (matrix[row_position][col_position - 1] != INVINCIBLE_BLOC)
-            {
-                matrix[row_position][col_position] = EMPTY;
-                matrix[row_position][--col_position] = SNOOPY;
-            }
-        }
-        break;
-    case RIGHT_ARROW:
-        if (col_position < cols - 1)
-        {
-            if (matrix[row_position][col_position + 1] == BIRD)
-            {
-                (*score)++;
-            }
-
-            if (matrix[row_position][col_position + 1] != INVINCIBLE_BLOC)
-            {
-                matrix[row_position][col_position] = EMPTY;
-                matrix[row_position][++col_position] = SNOOPY;
-            }
-        }
-        break;
-    default:
-        printf("Invalid direction. use the arrow keys to place the Snoopy character\n");
-    }
+    printf("+--------------------+\n");
 }
