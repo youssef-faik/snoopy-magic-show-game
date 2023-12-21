@@ -3,6 +3,10 @@
 #include <windows.h>
 #include <time.h>
 
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+
 #define UP_ARROW 72
 #define DOWN_ARROW 80
 #define LEFT_ARROW 75
@@ -17,6 +21,18 @@
 #define BIRD 'B'
 #define BALL 'O'
 #define INVINCIBLE_BLOC '#'
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+#define BIRD_SYMBOL "♫"
+#define SNOOPY_SYMBOL "☺"
+#define BALL_SYMBOL "♂"
+#define INVINCIBLE_BLOC_SYMBOL "☼"
 
 typedef struct {
     int x;
@@ -58,8 +74,14 @@ void printGameBoard(char[ROWS][COLS]);
 
 void delay();
 
+void printSymbol(char value);
+
 // main program
 int main() {
+    // Set console to use UTF-8
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
     startGame();
     return 0;
 }
@@ -271,10 +293,25 @@ void updateElements(char boardGame[ROWS][COLS], Update updates[], int numberUpda
         int y_offset = 5;
         int x_offset = 2;
         moveCursor(x + x_offset, y + y_offset); // Adjust the coordinates based on your console's cursor positioning
-        printf("%c", newValue);
+
+        printSymbol(newValue);
     }
 
     moveCursor(0, 18);
+}
+
+void printSymbol(char value) {
+    if (value == BIRD) {
+        printf(ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET, BIRD_SYMBOL);
+    } else if (value == SNOOPY) {
+        printf(ANSI_COLOR_YELLOW "%s" ANSI_COLOR_RESET, SNOOPY_SYMBOL);
+    } else if (value == BALL) {
+        printf(ANSI_COLOR_GREEN "%s" ANSI_COLOR_RESET, BALL_SYMBOL);
+    } else if (value == INVINCIBLE_BLOC) {
+        printf(ANSI_COLOR_RED "%s"ANSI_COLOR_RESET, INVINCIBLE_BLOC_SYMBOL);
+    } else {
+        printf("%c", value);
+    }
 }
 
 void startNewGame() {
@@ -282,7 +319,7 @@ void startNewGame() {
     printf("New game\n\n");
 
     int score = 0;
-    printf("Score: %d\n", score);
+    printf("Score: %d |♥ : 0 | ★ :3\n", score);
 
     int snoopyX = 0, snoopyY = 2;
     int ballX = 6, ballY = 4;
@@ -476,13 +513,13 @@ void moveCursor(int x, int y) {
 
 void printGameBoard(char boardGame[ROWS][COLS]) {
     int i, j;
-    printf("+--------------------+\n");
+    printf("╔════════════════════╗\n");
     for (i = 0; i < ROWS; i++) {
-        printf("|");
+        printf("║");
         for (j = 0; j < COLS; j++) {
-            printf("%c", boardGame[i][j]);
+            printSymbol(boardGame[i][j]);
         }
-        printf("|\n");
+        printf("║\n");
     }
-    printf("+--------------------+\n");
+    printf("╚════════════════════╝\n");
 }
