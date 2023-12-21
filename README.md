@@ -22,7 +22,6 @@ To play the Snoopy game:
 
 ## Contributors
 
-- [Youssef Faik](https://github.com/yusef-faik)
-- [Abderrahim Elmoutaouakil](https://github.com/AbderrahimeEl)
-- [Aimane Maane](https://github.com/Aimanemaane)
-- [Imad IDALI OUALI](https://github.com/ImadIdaliouali)
+<a href="https://github.com/yusef-faik/snoopy_game/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=yusef-faik/snoopy_game" />
+</a>
