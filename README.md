@@ -12,7 +12,7 @@ Welcome to Snoopy! This is a console-based game where you control Snoopy to coll
 - **Game Controls**: Understand the keyboard controls for playing Snoopy.
 - **Quit Game**: Close the game and return to the main menu.
 
-# Getting Started
+## Getting Started
 
 To play the Snoopy game:
 
