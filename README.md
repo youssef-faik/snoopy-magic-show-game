@@ -16,7 +16,7 @@ Welcome to Snoopy! This is a console-based game where you control Snoopy to coll
 
 To play the Snoopy game:
 
-1. **Compile the Code**: Use a C compiler to compile the provided source code.
+1. **Compile the Code**: Use GCC to compile the provided source code.
 2. **Run the Executable**: Execute the compiled program to start playing.
 3. **Navigate the Menu**: Use the keyboard arrow keys to navigate through the menu and select options.
 
