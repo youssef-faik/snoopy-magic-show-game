@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include <time.h>
+#include <stdlib.h>
 
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
@@ -106,6 +107,8 @@ updateBallPlacement(char boardGame[10][20], int *ballX, int *ballY, int *directi
 
 enum LeveLResult playLevel(int level, int *globalScore, int remainingLives);
 
+void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *ballX, int *ballY, int *snoopyX, int *snoopyY);
+
 // main program
 int main() {
     // Set console to use UTF-8
@@ -174,7 +177,7 @@ void startGame(int level, int *globalScore) {
 
     while (remainingLives > 0) {
         enum LeveLResult isLevelWon = playLevel(level, globalScore, remainingLives);
-
+        
         if (isLevelWon == LOST) {
             remainingLives--;
         } else if (isLevelWon == WON) {
@@ -226,7 +229,7 @@ void quitGame() {
 // helper functions implementations
 void displayWelcomeBanner() {
     clearScreen();
-    printf("___________________________________________\n");
+     printf("___________________________________________\n");
     printf("   _____                                         \n");
     printf("  / ___/ ____   ____   ____   ____   __  __      \n");
     printf("  \\__ \\ / __ \\ / __ \\ / __ \\ / __ \\ / / / /\n");
@@ -359,7 +362,7 @@ void printGameBoard(char boardGame[ROWS][COLS], int score, int remainingLives) {
     }
     printf("╚════════════════════╝\n");
 
-    printf("\nEnter direction (" UP_ARROW_SYMBOL"/" DOWN_ARROW_SYMBOL "/" RIGHT_ARROW_SYMBOL "/" LEFT_ARROW_SYMBOL ") or tape \"q\" to quit. ");
+    printf("\nEnter direction (" UP_ARROW_SYMBOL"/" DOWN_ARROW_SYMBOL "/" RIGHT_ARROW_SYMBOL "/" LEFT_ARROW_SYMBOL "), \"p\" to pause or \"q\" to quit. ");
 }
 
 void initializeBoardGame(char board[ROWS][COLS], int snoopyX, int snoopyY, int ballX, int ballY) {
@@ -415,11 +418,11 @@ enum LeveLResult playLevel(int level, int *globalScore, int remainingLives) {
     int score = 0;
     enum LeveLResult isLevelWon = QUIT;
 
-    int snoopyX = 0;
-    int snoopyY = 2;
+    int snoopyX ;
+    int snoopyY ;
 
-    int ballX = 6;
-    int ballY = 4;
+    int ballX ;
+    int ballY ;
 
     int directionY = 1;
     int directionX = 1;
@@ -433,9 +436,12 @@ enum LeveLResult playLevel(int level, int *globalScore, int remainingLives) {
     clock_t lastCheckTime = clock();
 
     char boardGame[ROWS][COLS];
-    initializeBoardGame(boardGame, snoopyX, snoopyY, ballX, ballY);
 
-    clearScreen();
+    readGameBoardElementsFromFile(level,  boardGame, &ballX, &ballY, &snoopyX, &snoopyY);
+
+//    initializeBoardGame(boardGame, snoopyX, snoopyY, ballX, ballY);
+
+   clearScreen();
     printf("Level: %d\n\n", level);
     printGameBoard(boardGame, score, remainingLives);
 
@@ -453,6 +459,16 @@ enum LeveLResult playLevel(int level, int *globalScore, int remainingLives) {
             char key = (char) getch();
 
             if (key == 'q') { return QUIT; }
+            else if (key == 'p') {
+                moveCursor(0, 17);
+                printf("GAME PAUSED PRESS \"p\" TO RESUME                                   \n\n");
+
+                while ((int) waitForKeyHit() != 'p');
+
+                moveCursor(0, 17);
+                printf("Enter direction (" UP_ARROW_SYMBOL"/" DOWN_ARROW_SYMBOL "/" RIGHT_ARROW_SYMBOL "/" LEFT_ARROW_SYMBOL "), \"p\" to pause or \"q\" to quit. ");
+
+            }
 
             moveSnoopy(boardGame, &snoopyX, &snoopyY, key, &score, &isLevelWon, &numberUpdates, updates);
             fflush(stdin);
@@ -516,26 +532,43 @@ void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *dir
     if (nextX < 0 || nextX >= ROWS) {
         *directionX = -*directionX;
     }
+    else
     if (nextY < 0 || nextY >= COLS) {
         *directionY = -*directionY;
     }
-
+    else
     if (boardGame[nextX][nextY] == BIRD) {
         *directionX = -*directionX;
         *directionY = -*directionY;
     }
-
+else
     if (boardGame[nextX][nextY] == SNOOPY) {
         *isLevelWon = LOST;
         return;
     }
+else
+    if (boardGame[nextX][nextY] == INVINCIBLE_BLOC) 
+{
+        if (boardGame[nextX - *directionX][nextY] == INVINCIBLE_BLOC ||
+        boardGame[nextX+ *directionX][nextY] == INVINCIBLE_BLOC)
+        *directionY = -*directionY;
 
+        else 
+        if (boardGame[nextX][nextY+*directionY] == INVINCIBLE_BLOC||
+        boardGame[nextX][nextY-*directionY] == INVINCIBLE_BLOC)
+        *directionX = -*directionX;
+
+        else{
+        *directionX = -*directionX;
+        *directionY = -*directionY;}
+}
+else
     if (boardGame[nextX - *directionX][nextY] == INVINCIBLE_BLOC &&
         boardGame[nextX][nextY - *directionY] == INVINCIBLE_BLOC) {
         *directionX = -*directionX;
         *directionY = -*directionY;
     }
-
+    
     // Update ball's position if no collision
     *ballX += *directionX;
     *ballY += *directionY;
@@ -571,7 +604,7 @@ void updateElementsDisplay(char (*boardGame)[20], Update *updates, int numberUpd
         int y_offset = 5;
         int x_offset = 2;
         moveCursor(x + x_offset, y + y_offset); // Adjust the coordinates based on your console's cursor positioning
-
+        
         printSymbol(newValue);
     }
 
@@ -681,4 +714,49 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
     }
 }
 
+void readGameBoardElementsFromFile (int level, char boardGame[ROWS][COLS], int *ballX, int *ballY, int *snoopyX, int *snoopyY) 
+ {
+    int i,j;
+    char element;
+    char filename[20]; // Assuming the file names are like "level1.txt", "level2.txt", etc.
+    sprintf(filename, "../level/level%d.txt", level); // Generating filename based on level
 
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Could not open file %s\n", filename);
+        return;
+    }
+
+    // Read values from the file and update the boardGame matrix and positions
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            fscanf(file, " %c", &element);
+            switch (element) {
+                case '0':
+                    element = EMPTY;
+                    break;
+                case '9':
+                    element = BIRD;
+                    break;
+                case '4':
+                    element = INVINCIBLE_BLOC;
+                    break;
+                case '7':
+                    element = SNOOPY;
+                    *snoopyX = i;
+                    *snoopyY = j;
+                    break;
+                case '8':
+                    element = BALL;
+                    *ballX = i;
+                    *ballY = j;
+                    break;
+                default:
+                    break;
+            }
+            boardGame[i][j] = element;
+        }
+    }
+    fclose(file);
+    return;
+}
