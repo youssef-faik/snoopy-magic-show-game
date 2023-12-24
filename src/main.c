@@ -1,8 +1,9 @@
 #include <conio.h>
 #include <stdio.h>
-#include <windows.h>
-#include <time.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <windows.h>
 
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
@@ -13,6 +14,10 @@
 #define LEFT_ARROW 75
 #define RIGHT_ARROW 77
 #define ENTER_KEY 13
+
+#define AVAILABLE_LEVELS 3
+#define MAX_NUM_PASSWORDS AVAILABLE_LEVELS
+#define MAX_PASSWORD_LENGTH 6
 
 #define ROWS 10
 #define COLS 20
@@ -34,6 +39,7 @@
 #define BIRD_SYMBOL "♫"
 #define SNOOPY_SYMBOL "☺"
 #define BALL_SYMBOL "♂"
+#define STAR_SYMBOL "★"
 #define INVINCIBLE_BLOC_SYMBOL "☼"
 
 #define UP_ARROW_SYMBOL "↑"
@@ -60,7 +66,7 @@ void startGame(int level, int *globalScore);
 
 void loadSavedGame();
 
-void displayLevels();
+void displayLevels(int *globalScore);
 
 void displayRecordedScores();
 
@@ -91,7 +97,7 @@ void initializeCountdownTimer(int *remainingTime);
 
 void checkRemainingTimeAndUpdate(int *remainingTime, clock_t *lastCheckTime);
 
-void displayLevelResult(enum LeveLResult isLevelWon);
+void displayLevelResult(enum LeveLResult isLevelWon, int level);
 
 void addUpdate(int x, int y, char newValue, int *index, Update updates[]);
 
@@ -107,7 +113,16 @@ updateBallPlacement(char boardGame[10][20], int *ballX, int *ballY, int *directi
 
 enum LeveLResult playLevel(int level, int *globalScore, int remainingLives);
 
-void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *ballX, int *ballY, int *snoopyX, int *snoopyY);
+void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *ballX, int *ballY, int *snoopyX,
+                                   int *snoopyY);
+
+int isLevelAvailable(int level);
+
+int validatePassword(int level, const char *enteredPassword);
+
+void displayAvailableLevels();
+
+void loadPasswordsFile(char passwords[MAX_NUM_PASSWORDS][MAX_PASSWORD_LENGTH]);
 
 // main program
 int main() {
@@ -140,7 +155,7 @@ void runGameApp() {
                 loadSavedGame();
                 break;
             case 3:
-                displayLevels();
+                displayLevels(&globalScore);
                 break;
             case 4:
                 displayRecordedScores();
@@ -177,10 +192,23 @@ void startGame(int level, int *globalScore) {
 
     while (remainingLives > 0) {
         enum LeveLResult isLevelWon = playLevel(level, globalScore, remainingLives);
-        
+
         if (isLevelWon == LOST) {
             remainingLives--;
         } else if (isLevelWon == WON) {
+            if (level == AVAILABLE_LEVELS) {
+                moveCursor(0, 17);
+
+                printf(ANSI_COLOR_YELLOW"★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★\n");
+                printf(STAR_SYMBOL ANSI_COLOR_RESET " YOU HAVE SUCCESSFULLY COMPLETED ALL LEVELS. YOU ARE A GAMING MASTER! " ANSI_COLOR_YELLOW STAR_SYMBOL);
+                printf("\n★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★\n\n"ANSI_COLOR_RESET);
+
+                printf("Press \"enter\" to Go Back to The Menu Screen....");
+                while ((int) waitForKeyHit() != ENTER_KEY);
+
+                return;
+            }
+
             level++;
         } else {
             break;
@@ -205,10 +233,52 @@ void displayRecordedScores() {
     waitForKeyHit();
 }
 
-void displayLevels() {
+void displayLevels(int *globalScore) {
     clearScreen();
     printf("Levels\n\n");
-    printf("Press Any Key To Go Back to The Menu Screen...");
+
+    char input[20];
+
+    while (1) {
+        displayAvailableLevels();
+
+        printf("Enter the level number (or 'q' to quit): ");
+        scanf("%s", input);
+
+        if (input[0] == 'q' || input[0] == 'Q') {
+            break;
+        }
+
+        int level = atoi(input);
+
+        if (isLevelAvailable(level)) {
+            char password[20];
+
+            while (1) {
+                printf("Enter the password for level %d (or 'q' to quit): ", level);
+                scanf("%s", password);
+
+                if (password[0] == 'q' || password[0] == 'Q') {
+                    printf("\nQuitting the game. Press Any Key To Go Back to The Menu Screen...");
+                    waitForKeyHit();
+                    return;
+                }
+
+                if (validatePassword(level, password)) {
+                    printf(ANSI_COLOR_GREEN"Password correct!  Press Any Key To Start...\n"ANSI_COLOR_RESET);
+                    waitForKeyHit();
+                    startGame(level, globalScore);
+                    return;
+                } else {
+                    printf(ANSI_COLOR_RED"Wrong password. Please try again.\n\n"ANSI_COLOR_RESET);
+                }
+            }
+        } else {
+            printf(ANSI_COLOR_RED "Invalid level. Please choose a valid level.\n\n"ANSI_COLOR_RESET);
+        }
+    }
+
+    printf("\nQuitting the game. Press Any Key To Go Back to The Menu Screen...");
     waitForKeyHit();
 }
 
@@ -229,7 +299,7 @@ void quitGame() {
 // helper functions implementations
 void displayWelcomeBanner() {
     clearScreen();
-     printf("___________________________________________\n");
+    printf("___________________________________________\n");
     printf("   _____                                         \n");
     printf("  / ___/ ____   ____   ____   ____   __  __      \n");
     printf("  \\__ \\ / __ \\ / __ \\ / __ \\ / __ \\ / / / /\n");
@@ -365,33 +435,6 @@ void printGameBoard(char boardGame[ROWS][COLS], int score, int remainingLives) {
     printf("\nEnter direction (" UP_ARROW_SYMBOL"/" DOWN_ARROW_SYMBOL "/" RIGHT_ARROW_SYMBOL "/" LEFT_ARROW_SYMBOL "), \"p\" to pause or \"q\" to quit. ");
 }
 
-void initializeBoardGame(char board[ROWS][COLS], int snoopyX, int snoopyY, int ballX, int ballY) {
-    int i, j;
-    for (i = 0; i < ROWS; i++) {
-        for (j = 0; j < COLS; j++) {
-            board[i][j] = EMPTY;
-        }
-    }
-
-    board[snoopyX][snoopyY] = SNOOPY;
-    board[ballX][ballY] = BALL;
-
-    //? birds
-    board[0][0] = BIRD;
-    board[0][COLS - 1] = BIRD;
-    board[ROWS - 1][0] = BIRD;
-    board[ROWS - 1][COLS - 1] = BIRD;
-
-    //? obstacles
-    board[4][4] = INVINCIBLE_BLOC;
-    board[4][5] = INVINCIBLE_BLOC;
-    board[5][6] = INVINCIBLE_BLOC;
-    board[6][7] = INVINCIBLE_BLOC;
-    board[0][1] = INVINCIBLE_BLOC;
-    board[0][COLS - 2] = INVINCIBLE_BLOC;
-    board[1][COLS - 2] = INVINCIBLE_BLOC;
-}
-
 void initializeCountdownTimer(int *remainingTime) {
     *remainingTime = DEFAULT_GAME_DURATION;
 }
@@ -418,11 +461,11 @@ enum LeveLResult playLevel(int level, int *globalScore, int remainingLives) {
     int score = 0;
     enum LeveLResult isLevelWon = QUIT;
 
-    int snoopyX ;
-    int snoopyY ;
+    int snoopyX;
+    int snoopyY;
 
-    int ballX ;
-    int ballY ;
+    int ballX;
+    int ballY;
 
     int directionY = 1;
     int directionX = 1;
@@ -436,12 +479,9 @@ enum LeveLResult playLevel(int level, int *globalScore, int remainingLives) {
     clock_t lastCheckTime = clock();
 
     char boardGame[ROWS][COLS];
+    readGameBoardElementsFromFile(level, boardGame, &ballX, &ballY, &snoopyX, &snoopyY);
 
-    readGameBoardElementsFromFile(level,  boardGame, &ballX, &ballY, &snoopyX, &snoopyY);
-
-//    initializeBoardGame(boardGame, snoopyX, snoopyY, ballX, ballY);
-
-   clearScreen();
+    clearScreen();
     printf("Level: %d\n\n", level);
     printGameBoard(boardGame, score, remainingLives);
 
@@ -498,15 +538,22 @@ enum LeveLResult playLevel(int level, int *globalScore, int remainingLives) {
         isLevelWon = LOST;
     }
 
-    displayLevelResult(isLevelWon);
+    displayLevelResult(isLevelWon, level);
 
     return isLevelWon;
 }
 
-void displayLevelResult(enum LeveLResult isLevelWon) {
-    if (isLevelWon == WON) {
+void displayLevelResult(enum LeveLResult isLevelWon, int level) {
+    if (isLevelWon == WON && level < AVAILABLE_LEVELS) {
         moveCursor(0, 17);
-        printf(ANSI_COLOR_GREEN "CONGRATS! YOU WON THIS LEVEL!                                   \n\n" ANSI_COLOR_RESET);
+
+        char passwords[MAX_NUM_PASSWORDS][MAX_PASSWORD_LENGTH];
+        loadPasswordsFile(passwords);
+        printf(ANSI_COLOR_GREEN "CONGRATS! YOU WON LEVEL %d!                                   \n" ANSI_COLOR_RESET,
+               level);
+
+        printf("LEVEL %d PASSWORD: " ANSI_COLOR_GREEN "%s                                   \n\n" ANSI_COLOR_RESET,
+               level + 1, passwords[level]);
 
         printf("Press \"enter\" to continue.");
         while ((int) waitForKeyHit() != ENTER_KEY);
@@ -531,44 +578,33 @@ void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *dir
     // Collision checks
     if (nextX < 0 || nextX >= ROWS) {
         *directionX = -*directionX;
-    }
-    else
-    if (nextY < 0 || nextY >= COLS) {
+    } else if (nextY < 0 || nextY >= COLS) {
         *directionY = -*directionY;
-    }
-    else
-    if (boardGame[nextX][nextY] == BIRD) {
+    } else if (boardGame[nextX][nextY] == BIRD) {
         *directionX = -*directionX;
         *directionY = -*directionY;
-    }
-else
-    if (boardGame[nextX][nextY] == SNOOPY) {
+    } else if (boardGame[nextX][nextY] == SNOOPY) {
         *isLevelWon = LOST;
         return;
-    }
-else
-    if (boardGame[nextX][nextY] == INVINCIBLE_BLOC) 
-{
+    } else if (boardGame[nextX][nextY] == INVINCIBLE_BLOC) {
         if (boardGame[nextX - *directionX][nextY] == INVINCIBLE_BLOC ||
-        boardGame[nextX+ *directionX][nextY] == INVINCIBLE_BLOC)
-        *directionY = -*directionY;
+            boardGame[nextX + *directionX][nextY] == INVINCIBLE_BLOC)
+            *directionY = -*directionY;
 
-        else 
-        if (boardGame[nextX][nextY+*directionY] == INVINCIBLE_BLOC||
-        boardGame[nextX][nextY-*directionY] == INVINCIBLE_BLOC)
-        *directionX = -*directionX;
+        else if (boardGame[nextX][nextY + *directionY] == INVINCIBLE_BLOC ||
+                 boardGame[nextX][nextY - *directionY] == INVINCIBLE_BLOC)
+            *directionX = -*directionX;
 
-        else{
-        *directionX = -*directionX;
-        *directionY = -*directionY;}
-}
-else
-    if (boardGame[nextX - *directionX][nextY] == INVINCIBLE_BLOC &&
-        boardGame[nextX][nextY - *directionY] == INVINCIBLE_BLOC) {
+        else {
+            *directionX = -*directionX;
+            *directionY = -*directionY;
+        }
+    } else if (boardGame[nextX - *directionX][nextY] == INVINCIBLE_BLOC &&
+               boardGame[nextX][nextY - *directionY] == INVINCIBLE_BLOC) {
         *directionX = -*directionX;
         *directionY = -*directionY;
     }
-    
+
     // Update ball's position if no collision
     *ballX += *directionX;
     *ballY += *directionY;
@@ -604,7 +640,7 @@ void updateElementsDisplay(char (*boardGame)[20], Update *updates, int numberUpd
         int y_offset = 5;
         int x_offset = 2;
         moveCursor(x + x_offset, y + y_offset); // Adjust the coordinates based on your console's cursor positioning
-        
+
         printSymbol(newValue);
     }
 
@@ -714,9 +750,8 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
     }
 }
 
-void readGameBoardElementsFromFile (int level, char boardGame[ROWS][COLS], int *ballX, int *ballY, int *snoopyX, int *snoopyY) 
- {
-    int i,j;
+void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *ballX, int *ballY, int *snoopyX,
+                                   int *snoopyY) {
     char element;
     char filename[20]; // Assuming the file names are like "level1.txt", "level2.txt", etc.
     sprintf(filename, "../level/level%d.txt", level); // Generating filename based on level
@@ -758,5 +793,52 @@ void readGameBoardElementsFromFile (int level, char boardGame[ROWS][COLS], int *
         }
     }
     fclose(file);
-    return;
+}
+
+int isLevelAvailable(int level) {
+    char filename[20];
+    sprintf(filename, "../level/level%d.txt", level);
+
+    FILE *file = fopen(filename, "r");
+    if (file) {
+        fclose(file);
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void displayAvailableLevels() {
+    printf("Available Levels: ");
+    for (int i = 1; i <= AVAILABLE_LEVELS; ++i) {
+        if (isLevelAvailable(i)) {
+            printf("%d ", i);
+        }
+    }
+    printf("\n");
+}
+
+void loadPasswordsFile(char passwords[MAX_NUM_PASSWORDS][MAX_PASSWORD_LENGTH]) {
+    int numPasswords = 0;
+
+    const char *file_path = "../level/passwords.txt";
+
+    FILE *file = fopen(file_path, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    while (numPasswords < MAX_NUM_PASSWORDS && fscanf(file, "%5s", passwords[numPasswords]) == 1) {
+        numPasswords++;
+    }
+
+    fclose(file);
+}
+
+int validatePassword(int level, const char *enteredPassword) {
+    char passwords[MAX_NUM_PASSWORDS][MAX_PASSWORD_LENGTH];
+    loadPasswordsFile(passwords);
+
+    return strcmp(enteredPassword, passwords[level - 1]) == 0;
 }
