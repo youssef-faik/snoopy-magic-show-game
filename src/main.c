@@ -711,7 +711,6 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
-                //:::::::::::::::::::::::::::::::::::::::::::::
                 
                 if (board[*snoopyX - 1][*snoopyY] == PUSHABLE_BLOC && *snoopyX-1>0&&board[*snoopyX - 2][*snoopyY] != INVINCIBLE_BLOC
                 &&board[*snoopyX - 2][*snoopyY] != BIRD&&board[*snoopyX - 2][*snoopyY] != PUSHABLE_BLOC) {
@@ -759,10 +758,7 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     board[++(*snoopyX)][*snoopyY] = SNOOPY;
                     addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
                     board[*snoopyX+1][*snoopyY] = PUSHABLE_BLOC;
-                    // moveCursor(*snoopyY,*snoopyX-1) ;printSymbol(PUSHABLE_BLOC);
                     addUpdate(*snoopyY, *snoopyX+1, PUSHABLE_BLOC, numberUpdates, updates);
-                    // addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
-                    // addUpdate(*snoopyY, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
                 }
 
                 if (board[*snoopyX + 1][*snoopyY] != INVINCIBLE_BLOC&&board[*snoopyX + 1][*snoopyY] != PUSHABLE_BLOC) {
@@ -797,10 +793,7 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     board[(*snoopyX)][--(*snoopyY)] = SNOOPY;
                     addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
                     board[*snoopyX][*snoopyY-1] = PUSHABLE_BLOC;
-                    // moveCursor(*snoopyY,*snoopyX-1) ;printSymbol(PUSHABLE_BLOC);
                     addUpdate(*snoopyY-1, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
-                    // addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
-                    // addUpdate(*snoopyY, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
                 }
 
                 if (board[*snoopyX][*snoopyY - 1] != INVINCIBLE_BLOC&&board[*snoopyX][*snoopyY-1] != PUSHABLE_BLOC) {
@@ -836,10 +829,7 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     board[(*snoopyX)][++(*snoopyY)] = SNOOPY;
                     addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
                     board[*snoopyX][*snoopyY+1] = PUSHABLE_BLOC;
-                    // moveCursor(*snoopyY,*snoopyX-1) ;printSymbol(PUSHABLE_BLOC);
                     addUpdate(*snoopyY+1, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
-                    // addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
-                    // addUpdate(*snoopyY, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
                 }
 
                 if (board[*snoopyX][*snoopyY + 1] != INVINCIBLE_BLOC&&board[*snoopyX][*snoopyY + 1] != PUSHABLE_BLOC) {
