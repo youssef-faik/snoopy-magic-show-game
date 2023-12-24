@@ -29,6 +29,7 @@
 #define BIRD 'B'
 #define BALL 'O'
 #define INVINCIBLE_BLOC '#'
+#define PUSHABLE_BLOC 'P'
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -41,6 +42,7 @@
 #define BALL_SYMBOL "♂"
 #define STAR_SYMBOL "★"
 #define INVINCIBLE_BLOC_SYMBOL "☼"
+#define PUSHABLE_BLOC_SYMBOL "▬"
 
 #define UP_ARROW_SYMBOL "↑"
 #define DOWN_ARROW_SYMBOL "↓"
@@ -221,7 +223,20 @@ void startGame(int level, int *globalScore) {
 
 void displayGameControls() {
     clearScreen();
-    printf("Controls\n\n");
+    printf(ANSI_COLOR_GREEN".......................Controls.......................\n");
+    printf(ANSI_COLOR_RESET"Movement:\n");
+    printf("  ↑ : Move Up\n");
+    printf("  ↓ : Move Down\n");
+    printf("  ← : Move Left\n");
+    printf("  → : Move Right\n");
+    printf("\n");
+    printf("Game Actions:\n");
+    printf("  P : Pause/Unpause the game\n");
+    printf("  Special keys to interact with blocks\n");
+    printf("\n");
+    printf("Winning Conditions:\n");
+    printf("  - Collect all 4 birds without getting hit by the ball\n");
+    printf("  - Finish the level within 120 seconds.\n");
     printf("Press Any Key To Go Back to The Menu Screen...");
     waitForKeyHit();
 }
@@ -406,7 +421,11 @@ void printSymbol(char value) {
         printf(ANSI_COLOR_GREEN "%s" ANSI_COLOR_RESET, BALL_SYMBOL);
     } else if (value == INVINCIBLE_BLOC) {
         printf(ANSI_COLOR_RED "%s"ANSI_COLOR_RESET, INVINCIBLE_BLOC_SYMBOL);
-    } else {
+    }
+    else if (value == PUSHABLE_BLOC) {
+        printf(ANSI_COLOR_BLUE "%s"ANSI_COLOR_RESET, PUSHABLE_BLOC_SYMBOL);
+    }
+     else {
         printf("%c", value);
     }
 }
@@ -604,6 +623,29 @@ void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *dir
         *directionX = -*directionX;
         *directionY = -*directionY;
     }
+    else
+    if (boardGame[nextX][nextY] == PUSHABLE_BLOC) 
+{
+        if (boardGame[nextX - *directionX][nextY] == PUSHABLE_BLOC ||
+        boardGame[nextX+ *directionX][nextY] == PUSHABLE_BLOC)
+        *directionY = -*directionY;
+
+        else 
+        if (boardGame[nextX][nextY+*directionY] == PUSHABLE_BLOC||
+        boardGame[nextX][nextY-*directionY] == PUSHABLE_BLOC)
+        *directionX = -*directionX;
+
+        else{
+        *directionX = -*directionX;
+        *directionY = -*directionY;}
+}
+else
+    if (boardGame[nextX - *directionX][nextY] == PUSHABLE_BLOC &&
+        boardGame[nextX][nextY - *directionY] == PUSHABLE_BLOC) {
+        *directionX = -*directionX;
+        *directionY = -*directionY;
+    }
+    
 
     // Update ball's position if no collision
     *ballX += *directionX;
@@ -660,6 +702,7 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     *isLevelWon = LOST;
                     return;
                 }
+                else
 
                 if (board[*snoopyX - 1][*snoopyY] == BIRD) {
                     (*score)++;
@@ -668,8 +711,23 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
+                //:::::::::::::::::::::::::::::::::::::::::::::
+                
+                if (board[*snoopyX - 1][*snoopyY] == PUSHABLE_BLOC && *snoopyX-1>0&&board[*snoopyX - 2][*snoopyY] != INVINCIBLE_BLOC
+                &&board[*snoopyX - 2][*snoopyY] != BIRD&&board[*snoopyX - 2][*snoopyY] != PUSHABLE_BLOC) {
 
-                if (board[*snoopyX - 1][*snoopyY] != INVINCIBLE_BLOC) {
+                    board[*snoopyX][*snoopyY] = EMPTY;
+                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
+                    board[*snoopyX-1][*snoopyY] = EMPTY;
+                    addUpdate(*snoopyY, *snoopyX-1, EMPTY, numberUpdates, updates);
+                    board[--(*snoopyX)][*snoopyY] = SNOOPY;
+                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                    board[*snoopyX-1][*snoopyY] = PUSHABLE_BLOC;
+                    addUpdate(*snoopyY, *snoopyX-1, PUSHABLE_BLOC, numberUpdates, updates);
+                 
+                }
+                
+                if (board[*snoopyX - 1][*snoopyY] != INVINCIBLE_BLOC&&board[*snoopyX - 1][*snoopyY] != PUSHABLE_BLOC) {
                     board[*snoopyX][*snoopyY] = EMPTY;
                     addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
                     board[--(*snoopyX)][*snoopyY] = SNOOPY;
@@ -691,8 +749,23 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
+                if (board[*snoopyX + 1][*snoopyY] == PUSHABLE_BLOC && *snoopyX+1<ROWS -1&&board[*snoopyX + 2][*snoopyY] != INVINCIBLE_BLOC
+                &&board[*snoopyX + 2][*snoopyY] != BIRD&&board[*snoopyX + 2][*snoopyY] != PUSHABLE_BLOC) {
 
-                if (board[*snoopyX + 1][*snoopyY] != INVINCIBLE_BLOC) {
+                    board[*snoopyX][*snoopyY] = EMPTY;
+                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
+                    board[*snoopyX+1][*snoopyY] = EMPTY;
+                    addUpdate(*snoopyY-1, *snoopyX, EMPTY, numberUpdates, updates);
+                    board[++(*snoopyX)][*snoopyY] = SNOOPY;
+                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                    board[*snoopyX+1][*snoopyY] = PUSHABLE_BLOC;
+                    // moveCursor(*snoopyY,*snoopyX-1) ;printSymbol(PUSHABLE_BLOC);
+                    addUpdate(*snoopyY, *snoopyX+1, PUSHABLE_BLOC, numberUpdates, updates);
+                    // addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                    // addUpdate(*snoopyY, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
+                }
+
+                if (board[*snoopyX + 1][*snoopyY] != INVINCIBLE_BLOC&&board[*snoopyX + 1][*snoopyY] != PUSHABLE_BLOC) {
                     addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
                     board[*snoopyX][*snoopyY] = EMPTY;
                     board[++(*snoopyX)][*snoopyY] = SNOOPY;
@@ -714,8 +787,23 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
+                if (board[*snoopyX][*snoopyY-1] == PUSHABLE_BLOC && *snoopyY-1>0 &&board[*snoopyX][*snoopyY-2] != INVINCIBLE_BLOC
+                &&board[*snoopyX][*snoopyY-2] != BIRD&&board[*snoopyX][*snoopyY-2] != PUSHABLE_BLOC) {
 
-                if (board[*snoopyX][*snoopyY - 1] != INVINCIBLE_BLOC) {
+                    board[*snoopyX][*snoopyY] = EMPTY;
+                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
+                    board[*snoopyX][*snoopyY-1] = EMPTY;
+                    addUpdate(*snoopyY-1, *snoopyX, EMPTY, numberUpdates, updates);
+                    board[(*snoopyX)][--(*snoopyY)] = SNOOPY;
+                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                    board[*snoopyX][*snoopyY-1] = PUSHABLE_BLOC;
+                    // moveCursor(*snoopyY,*snoopyX-1) ;printSymbol(PUSHABLE_BLOC);
+                    addUpdate(*snoopyY-1, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
+                    // addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                    // addUpdate(*snoopyY, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
+                }
+
+                if (board[*snoopyX][*snoopyY - 1] != INVINCIBLE_BLOC&&board[*snoopyX][*snoopyY-1] != PUSHABLE_BLOC) {
                     addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
                     board[*snoopyX][*snoopyY] = EMPTY;
                     board[*snoopyX][--(*snoopyY)] = SNOOPY;
@@ -738,8 +826,23 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
 
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
+                if (board[*snoopyX][*snoopyY+1] == PUSHABLE_BLOC && *snoopyY+1<COLS-1 &&board[*snoopyX][*snoopyY+2] != INVINCIBLE_BLOC
+                &&board[*snoopyX][*snoopyY+2] != BIRD&&board[*snoopyX][*snoopyY+2] != PUSHABLE_BLOC) {
 
-                if (board[*snoopyX][*snoopyY + 1] != INVINCIBLE_BLOC) {
+                    board[*snoopyX][*snoopyY] = EMPTY;
+                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
+                    board[*snoopyX][*snoopyY+1] = EMPTY;
+                    addUpdate(*snoopyY+1, *snoopyX, EMPTY, numberUpdates, updates);
+                    board[(*snoopyX)][++(*snoopyY)] = SNOOPY;
+                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                    board[*snoopyX][*snoopyY+1] = PUSHABLE_BLOC;
+                    // moveCursor(*snoopyY,*snoopyX-1) ;printSymbol(PUSHABLE_BLOC);
+                    addUpdate(*snoopyY+1, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
+                    // addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                    // addUpdate(*snoopyY, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
+                }
+
+                if (board[*snoopyX][*snoopyY + 1] != INVINCIBLE_BLOC&&board[*snoopyX][*snoopyY + 1] != PUSHABLE_BLOC) {
                     addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
                     board[*snoopyX][*snoopyY] = EMPTY;
                     board[*snoopyX][++(*snoopyY)] = SNOOPY;
@@ -769,6 +872,9 @@ void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *b
             switch (element) {
                 case '0':
                     element = EMPTY;
+                    break;
+                case '2':
+                    element = PUSHABLE_BLOC;
                     break;
                 case '9':
                     element = BIRD;
