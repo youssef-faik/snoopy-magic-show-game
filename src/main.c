@@ -30,6 +30,7 @@
 #define BALL 'O'
 #define INVINCIBLE_BLOC '#'
 #define PUSHABLE_BLOC 'P'
+#define BREAKABLE_BLOC 'C'
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -43,6 +44,7 @@
 #define STAR_SYMBOL "★"
 #define INVINCIBLE_BLOC_SYMBOL "☼"
 #define PUSHABLE_BLOC_SYMBOL "▬"
+#define BREAKABLE_BLOC_SYMBOL "♠"
 
 #define UP_ARROW_SYMBOL "↑"
 #define DOWN_ARROW_SYMBOL "↓"
@@ -56,7 +58,7 @@ enum LeveLResult {
 typedef struct {
     int x;
     int y;
-    char newValue;
+    char score;
 } Update;
 
 // main functions declarations
@@ -64,13 +66,13 @@ void runGameApp();
 
 void displayGameRules();
 
-void startGame(int level, int *globalScore);
+void startGame(int level, int *globalScore, int *highestScore);
 
 void loadSavedGame();
 
-void displayLevels(int *globalScore);
+void displayLevels(int *globalScore, int *highestScore);
 
-void displayRecordedScores();
+void displayRecordedScores(int highestScore);
 
 void displayGameControls();
 
@@ -99,9 +101,9 @@ void initializeCountdownTimer(int *remainingTime);
 
 void checkRemainingTimeAndUpdate(int *remainingTime, clock_t *lastCheckTime);
 
-void displayLevelResult(enum LeveLResult isLevelWon, int level);
+void displayLevelResult(enum LeveLResult isLevelWon, int level, int *score);
 
-void addUpdate(int x, int y, char newValue, int *index, Update updates[]);
+void addUpdate(int x, int y, char score, int *index, Update updates[]);
 
 void updateElementsDisplay(char boardGame[ROWS][COLS], Update updates[], int numberUpdates);
 
@@ -113,7 +115,7 @@ void
 updateBallPlacement(char boardGame[10][20], int *ballX, int *ballY, int *directionX, int *directionY,
                     enum LeveLResult *isLevelWon, Update updates[100000], int *numberUpdates);
 
-enum LeveLResult playLevel(int level, int *globalScore, int remainingLives);
+enum LeveLResult playLevel(int level, int *globalScore, int *highestScoreint, int remainingLives);
 
 void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *ballX, int *ballY, int *snoopyX,
                                    int *snoopyY);
@@ -125,6 +127,11 @@ int validatePassword(int level, const char *enteredPassword);
 void displayAvailableLevels();
 
 void loadPasswordsFile(char passwords[MAX_NUM_PASSWORDS][MAX_PASSWORD_LENGTH]);
+
+void updateScore(int score);
+
+int readHighestScore();
+void saveNewHighestScore(int score);
 
 // main program
 int main() {
@@ -140,6 +147,7 @@ int main() {
 // main functions implementations
 void runGameApp() {
     int globalScore = 0;
+    int highestScore = readHighestScore();
     int selectedOption;
 
     do {
@@ -151,16 +159,16 @@ void runGameApp() {
                 displayGameRules();
                 break;
             case 1:
-                startGame(1, &globalScore);
+                startGame(1, &globalScore, &highestScore);
                 break;
             case 2:
                 loadSavedGame();
                 break;
             case 3:
-                displayLevels(&globalScore);
+                displayLevels(&globalScore, &highestScore);
                 break;
             case 4:
-                displayRecordedScores();
+                displayRecordedScores(highestScore);
                 break;
             case 5:
                 displayGameControls();
@@ -189,11 +197,11 @@ void displayGameRules() {
     waitForKeyHit();
 }
 
-void startGame(int level, int *globalScore) {
+void startGame(int level, int *globalScore, int *highestScore) {
     int remainingLives = 3;
 
     while (remainingLives > 0) {
-        enum LeveLResult isLevelWon = playLevel(level, globalScore, remainingLives);
+        enum LeveLResult isLevelWon = playLevel(level, globalScore, highestScore, remainingLives);
 
         if (isLevelWon == LOST) {
             remainingLives--;
@@ -241,14 +249,17 @@ void displayGameControls() {
     waitForKeyHit();
 }
 
-void displayRecordedScores() {
+void displayRecordedScores(int highestScore) {
     clearScreen();
-    printf("Recorded Scores\n\n");
-    printf("Press Any Key To Go Back to The Menu Screen...");
+    printf("Recorded highest Score\n\n");
+
+    printf(ANSI_COLOR_YELLOW STAR_SYMBOL " Current highest Score : "ANSI_COLOR_RESET "%d\n", highestScore);
+
+    printf("\nPress Any Key To Go Back to The Menu Screen...");
     waitForKeyHit();
 }
 
-void displayLevels(int *globalScore) {
+void displayLevels(int *globalScore, int *highestScore) {
     clearScreen();
     printf("Levels\n\n");
 
@@ -282,7 +293,7 @@ void displayLevels(int *globalScore) {
                 if (validatePassword(level, password)) {
                     printf(ANSI_COLOR_GREEN"Password correct!  Press Any Key To Start...\n"ANSI_COLOR_RESET);
                     waitForKeyHit();
-                    startGame(level, globalScore);
+                    startGame(level, globalScore, highestScore);
                     return;
                 } else {
                     printf(ANSI_COLOR_RED"Wrong password. Please try again.\n\n"ANSI_COLOR_RESET);
@@ -425,6 +436,9 @@ void printSymbol(char value) {
     else if (value == PUSHABLE_BLOC) {
         printf(ANSI_COLOR_BLUE "%s"ANSI_COLOR_RESET, PUSHABLE_BLOC_SYMBOL);
     }
+    else if (value == BREAKABLE_BLOC) {
+        printf(ANSI_COLOR_YELLOW "%s"ANSI_COLOR_RESET, BREAKABLE_BLOC_SYMBOL);
+    }
      else {
         printf("%c", value);
     }
@@ -476,7 +490,7 @@ void checkRemainingTimeAndUpdate(int *remainingTime, clock_t *lastCheckTime) {
     }
 }
 
-enum LeveLResult playLevel(int level, int *globalScore, int remainingLives) {
+enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int remainingLives) {
     int score = 0;
     enum LeveLResult isLevelWon = QUIT;
 
@@ -551,18 +565,23 @@ enum LeveLResult playLevel(int level, int *globalScore, int remainingLives) {
 
     if (score == 4) {
         isLevelWon = WON;
+        *globalScore += remainingTime * level;
+        if(*globalScore > *highestScore){
+         *highestScore = *globalScore;
+         saveNewHighestScore(*highestScore);
+        }
     }
 
     if (score < 4 && remainingTime < 0) {
         isLevelWon = LOST;
     }
 
-    displayLevelResult(isLevelWon, level);
+     displayLevelResult(isLevelWon, level, &score);
 
     return isLevelWon;
 }
 
-void displayLevelResult(enum LeveLResult isLevelWon, int level) {
+void displayLevelResult(enum LeveLResult isLevelWon, int level, int *score) {
     if (isLevelWon == WON && level < AVAILABLE_LEVELS) {
         moveCursor(0, 17);
 
@@ -570,6 +589,9 @@ void displayLevelResult(enum LeveLResult isLevelWon, int level) {
         loadPasswordsFile(passwords);
         printf(ANSI_COLOR_GREEN "CONGRATS! YOU WON LEVEL %d!                                   \n" ANSI_COLOR_RESET,
                level);
+
+        printf(ANSI_COLOR_YELLOW STAR_SYMBOL " Your Score is : "ANSI_COLOR_RESET "%d\n", &score);
+
 
         printf("LEVEL %d PASSWORD: " ANSI_COLOR_GREEN "%s                                   \n\n" ANSI_COLOR_RESET,
                level + 1, passwords[level]);
@@ -588,6 +610,7 @@ void displayLevelResult(enum LeveLResult isLevelWon, int level) {
 
 
 }
+
 
 void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *directionX, int *directionY,
                         enum LeveLResult *isLevelWon) {
@@ -645,8 +668,30 @@ else
         *directionX = -*directionX;
         *directionY = -*directionY;
     }
-    
 
+else
+    if (boardGame[nextX][nextY] == BREAKABLE_BLOC) 
+{
+        if (boardGame[nextX - *directionX][nextY] == BREAKABLE_BLOC ||
+        boardGame[nextX+ *directionX][nextY] == BREAKABLE_BLOC)
+        *directionY = -*directionY;
+
+        else 
+        if (boardGame[nextX][nextY+*directionY] == BREAKABLE_BLOC||
+        boardGame[nextX][nextY-*directionY] == BREAKABLE_BLOC)
+        *directionX = -*directionX;
+
+        else{
+        *directionX = -*directionX;
+        *directionY = -*directionY;}
+}
+else
+    if (boardGame[nextX - *directionX][nextY] == BREAKABLE_BLOC &&
+        boardGame[nextX][nextY - *directionY] == BREAKABLE_BLOC) {
+        *directionX = -*directionX;
+        *directionY = -*directionY;
+    }
+    
     // Update ball's position if no collision
     *ballX += *directionX;
     *ballY += *directionY;
@@ -664,8 +709,8 @@ updateBallPlacement(char boardGame[10][20], int *ballX, int *ballY, int *directi
     addUpdate((*ballY), (*ballX), BALL, numberUpdates, updates);
 }
 
-void addUpdate(int x, int y, char newValue, int *index, Update *updates) {
-    updates[*index].newValue = newValue;
+void addUpdate(int x, int y, char score, int *index, Update *updates) {
+    updates[*index].score = score;
     updates[*index].x = x;
     updates[*index].y = y;
 
@@ -676,14 +721,14 @@ void updateElementsDisplay(char (*boardGame)[20], Update *updates, int numberUpd
     for (int i = 0; i < numberUpdates; i++) {
         int x = updates[i].x;
         int y = updates[i].y;
-        char newValue = updates[i].newValue;
-        boardGame[y][x] = newValue;
+        char score = updates[i].score;
+        boardGame[y][x] = score;
 
         int y_offset = 5;
         int x_offset = 2;
         moveCursor(x + x_offset, y + y_offset); // Adjust the coordinates based on your console's cursor positioning
 
-        printSymbol(newValue);
+        printSymbol(score);
     }
 
     moveCursor(0, 18);
@@ -711,7 +756,12 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
-                
+                else
+
+                if (board[*snoopyX - 1][*snoopyY] == BREAKABLE_BLOC) {
+                    addUpdate(SCORE_X, SCORE_Y, EMPTY, numberUpdates, updates);
+                }
+
                 if (board[*snoopyX - 1][*snoopyY] == PUSHABLE_BLOC && *snoopyX-1>0&&board[*snoopyX - 2][*snoopyY] != INVINCIBLE_BLOC
                 &&board[*snoopyX - 2][*snoopyY] != BIRD&&board[*snoopyX - 2][*snoopyY] != PUSHABLE_BLOC) {
 
@@ -748,6 +798,9 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
+                if (board[*snoopyX + 1][*snoopyY] == BREAKABLE_BLOC) {
+                    addUpdate(SCORE_X, SCORE_Y, EMPTY, numberUpdates, updates);
+                }
                 if (board[*snoopyX + 1][*snoopyY] == PUSHABLE_BLOC && *snoopyX+1<ROWS -1&&board[*snoopyX + 2][*snoopyY] != INVINCIBLE_BLOC
                 &&board[*snoopyX + 2][*snoopyY] != BIRD&&board[*snoopyX + 2][*snoopyY] != PUSHABLE_BLOC) {
 
@@ -782,6 +835,9 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     number = *score;
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
+                }
+                if (board[*snoopyX][*snoopyY - 1] == BREAKABLE_BLOC) {
+                    addUpdate(SCORE_X, SCORE_Y, EMPTY, numberUpdates, updates);
                 }
                 if (board[*snoopyX][*snoopyY-1] == PUSHABLE_BLOC && *snoopyY-1>0 &&board[*snoopyX][*snoopyY-2] != INVINCIBLE_BLOC
                 &&board[*snoopyX][*snoopyY-2] != BIRD&&board[*snoopyX][*snoopyY-2] != PUSHABLE_BLOC) {
@@ -818,6 +874,10 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
                     char charRepresentation = '0' + number;
 
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
+                }
+                if (board[*snoopyX][*snoopyY + 1] == BREAKABLE_BLOC) {
+
+                    addUpdate(SCORE_X, SCORE_Y, EMPTY, numberUpdates, updates);
                 }
                 if (board[*snoopyX][*snoopyY+1] == PUSHABLE_BLOC && *snoopyY+1<COLS-1 &&board[*snoopyX][*snoopyY+2] != INVINCIBLE_BLOC
                 &&board[*snoopyX][*snoopyY+2] != BIRD&&board[*snoopyX][*snoopyY+2] != PUSHABLE_BLOC) {
@@ -862,6 +922,9 @@ void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *b
             switch (element) {
                 case '0':
                     element = EMPTY;
+                    break;
+                case '1':
+                    element = BREAKABLE_BLOC;
                     break;
                 case '2':
                     element = PUSHABLE_BLOC;
@@ -937,4 +1000,31 @@ int validatePassword(int level, const char *enteredPassword) {
     loadPasswordsFile(passwords);
 
     return strcmp(enteredPassword, passwords[level - 1]) == 0;
+}
+
+void saveNewHighestScore(int score) {
+    FILE *file;
+    int lastValue;
+
+        // If file doesn't exist, create it and write the new value
+        file = fopen("score.txt", "w");
+        fprintf(file, "%d", score);
+        fclose(file);
+}
+
+int readHighestScore() {
+    FILE *file;
+    int highestScore = 0;
+
+    // Open file for reading
+    file = fopen("score.txt", "r");
+    if (file == NULL) {
+        return highestScore; // Return -1 to indicate an error or no score available
+    }
+
+    // Read the highest score from the file
+    fscanf(file, "%d", &highestScore);
+    fclose(file);
+
+    return highestScore;
 }
