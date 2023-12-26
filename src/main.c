@@ -58,7 +58,7 @@ enum LeveLResult {
 typedef struct {
     int x;
     int y;
-    char score;
+    char newValue;
 } Update;
 
 // main functions declarations
@@ -103,7 +103,7 @@ void checkRemainingTimeAndUpdate(int *remainingTime, clock_t *lastCheckTime);
 
 void displayLevelResult(enum LeveLResult isLevelWon, int level, int *score);
 
-void addUpdate(int x, int y, char score, int *index, Update updates[]);
+void addUpdate(int x, int y, char newValue, int *index, Update updates[]);
 
 void updateElementsDisplay(char boardGame[ROWS][COLS], Update updates[], int numberUpdates);
 
@@ -709,8 +709,8 @@ updateBallPlacement(char boardGame[10][20], int *ballX, int *ballY, int *directi
     addUpdate((*ballY), (*ballX), BALL, numberUpdates, updates);
 }
 
-void addUpdate(int x, int y, char score, int *index, Update *updates) {
-    updates[*index].score = score;
+void addUpdate(int x, int y, char newValue, int *index, Update *updates) {
+    updates[*index].newValue = newValue;
     updates[*index].x = x;
     updates[*index].y = y;
 
@@ -721,14 +721,14 @@ void updateElementsDisplay(char (*boardGame)[20], Update *updates, int numberUpd
     for (int i = 0; i < numberUpdates; i++) {
         int x = updates[i].x;
         int y = updates[i].y;
-        char score = updates[i].score;
-        boardGame[y][x] = score;
+        char newValue= updates[i].newValue;
+        boardGame[y][x] = newValue;
 
         int y_offset = 5;
         int x_offset = 2;
         moveCursor(x + x_offset, y + y_offset); // Adjust the coordinates based on your console's cursor positioning
 
-        printSymbol(score);
+        printSymbol(newValue);
     }
 
     moveCursor(0, 18);
