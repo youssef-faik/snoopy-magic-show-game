@@ -31,12 +31,15 @@
 #define INVINCIBLE_BLOC '#'
 #define PUSHABLE_BLOC 'P'
 #define BREAKABLE_BLOC 'C'
+#define TRAPPED_BLOC 'T'
+
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_YELLOW  "\x1b[33m"
 #define ANSI_COLOR_BLUE    "\x1b[34m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
 
 #define BIRD_SYMBOL "♫"
 #define SNOOPY_SYMBOL "☺"
@@ -45,6 +48,7 @@
 #define INVINCIBLE_BLOC_SYMBOL "☼"
 #define PUSHABLE_BLOC_SYMBOL "▬"
 #define BREAKABLE_BLOC_SYMBOL "♠"
+#define TRAPPED_BLOC_SYMBOL "♣"
 
 #define UP_ARROW_SYMBOL "↑"
 #define DOWN_ARROW_SYMBOL "↓"
@@ -439,6 +443,9 @@ void printSymbol(char value) {
     else if (value == BREAKABLE_BLOC) {
         printf(ANSI_COLOR_YELLOW "%s"ANSI_COLOR_RESET, BREAKABLE_BLOC_SYMBOL);
     }
+    else if (value == TRAPPED_BLOC) {
+        printf(ANSI_COLOR_MAGENTA "%s"ANSI_COLOR_RESET, TRAPPED_BLOC_SYMBOL);
+    }
      else {
         printf("%c", value);
     }
@@ -616,6 +623,7 @@ void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *dir
                         enum LeveLResult *isLevelWon) {
     int nextX = *ballX + *directionX;
     int nextY = *ballY + *directionY;
+    char next ;
 
     // Collision checks
     if (nextX < 0 || nextX >= ROWS) {
@@ -628,34 +636,19 @@ void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *dir
     } else if (boardGame[nextX][nextY] == SNOOPY) {
         *isLevelWon = LOST;
         return;
-    } else if (boardGame[nextX][nextY] == INVINCIBLE_BLOC) {
-        if (boardGame[nextX - *directionX][nextY] == INVINCIBLE_BLOC ||
-            boardGame[nextX + *directionX][nextY] == INVINCIBLE_BLOC)
-            *directionY = -*directionY;
-
-        else if (boardGame[nextX][nextY + *directionY] == INVINCIBLE_BLOC ||
-                 boardGame[nextX][nextY - *directionY] == INVINCIBLE_BLOC)
-            *directionX = -*directionX;
-
-        else {
-            *directionX = -*directionX;
-            *directionY = -*directionY;
-        }
-    } else if (boardGame[nextX - *directionX][nextY] == INVINCIBLE_BLOC &&
-               boardGame[nextX][nextY - *directionY] == INVINCIBLE_BLOC) {
-        *directionX = -*directionX;
-        *directionY = -*directionY;
-    }
+    } 
     else
-    if (boardGame[nextX][nextY] == PUSHABLE_BLOC) 
+    if (boardGame[nextX][nextY] == PUSHABLE_BLOC || boardGame[nextX][nextY] == BREAKABLE_BLOC  || boardGame[nextX][nextY] == INVINCIBLE_BLOC || boardGame[nextX][nextY] == TRAPPED_BLOC)
 {
-        if (boardGame[nextX - *directionX][nextY] == PUSHABLE_BLOC ||
-        boardGame[nextX+ *directionX][nextY] == PUSHABLE_BLOC)
+    next = boardGame[nextX][nextY];
+
+        if (boardGame[nextX - *directionX][nextY] == next ||
+        boardGame[nextX+ *directionX][nextY] == next)
         *directionY = -*directionY;
 
         else 
-        if (boardGame[nextX][nextY+*directionY] == PUSHABLE_BLOC||
-        boardGame[nextX][nextY-*directionY] == PUSHABLE_BLOC)
+        if (boardGame[nextX][nextY+*directionY] == next||
+        boardGame[nextX][nextY-*directionY] == next)
         *directionX = -*directionX;
 
         else{
@@ -663,35 +656,11 @@ void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *dir
         *directionY = -*directionY;}
 }
 else
-    if (boardGame[nextX - *directionX][nextY] == PUSHABLE_BLOC &&
-        boardGame[nextX][nextY - *directionY] == PUSHABLE_BLOC) {
+    if (boardGame[nextX - *directionX][nextY] == next &&
+        boardGame[nextX][nextY - *directionY] == next) {
         *directionX = -*directionX;
         *directionY = -*directionY;
     }
-
-else
-    if (boardGame[nextX][nextY] == BREAKABLE_BLOC) 
-{
-        if (boardGame[nextX - *directionX][nextY] == BREAKABLE_BLOC ||
-        boardGame[nextX+ *directionX][nextY] == BREAKABLE_BLOC)
-        *directionY = -*directionY;
-
-        else 
-        if (boardGame[nextX][nextY+*directionY] == BREAKABLE_BLOC||
-        boardGame[nextX][nextY-*directionY] == BREAKABLE_BLOC)
-        *directionX = -*directionX;
-
-        else{
-        *directionX = -*directionX;
-        *directionY = -*directionY;}
-}
-else
-    if (boardGame[nextX - *directionX][nextY] == BREAKABLE_BLOC &&
-        boardGame[nextX][nextY - *directionY] == BREAKABLE_BLOC) {
-        *directionX = -*directionX;
-        *directionY = -*directionY;
-    }
-    
     // Update ball's position if no collision
     *ballX += *directionX;
     *ballY += *directionY;
@@ -743,7 +712,7 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
     switch (key) {
         case UP_ARROW:
             if (*snoopyX > 0) {
-                if (board[*snoopyX - 1][*snoopyY] == BALL) {
+                if (board[*snoopyX - 1][*snoopyY] == BALL || board[*snoopyX - 1][*snoopyY] == TRAPPED_BLOC) {
                     *isLevelWon = LOST;
                     return;
                 }
@@ -786,7 +755,7 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
             break;
         case DOWN_ARROW:
             if (*snoopyX < ROWS - 1) {
-                if (board[*snoopyX + 1][*snoopyY] == BALL) {
+                if (board[*snoopyX + 1][*snoopyY] == BALL || board[*snoopyX + 1][*snoopyY] == TRAPPED_BLOC) {
                     *isLevelWon = LOST;
                     return;
                 }
@@ -824,7 +793,7 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
             break;
         case LEFT_ARROW:
             if (*snoopyY > 0) {
-                if (board[*snoopyX][*snoopyY - 1] == BALL) {
+                if (board[*snoopyX][*snoopyY - 1] == BALL || board[*snoopyX][*snoopyY - 1] == TRAPPED_BLOC) {
                     *isLevelWon = LOST;
                     return;
                 }
@@ -862,7 +831,7 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
             break;
         case RIGHT_ARROW:
             if (*snoopyY < COLS - 1) {
-                if (board[*snoopyX][*snoopyY + 1] == BALL) {
+                if (board[*snoopyX][*snoopyY + 1] == BALL || board[*snoopyX][*snoopyY + 1] == TRAPPED_BLOC) {
                     *isLevelWon = LOST;
                     return;
                 }
@@ -928,6 +897,9 @@ void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *b
                     break;
                 case '2':
                     element = PUSHABLE_BLOC;
+                    break;
+                case '3':
+                    element = TRAPPED_BLOC;
                     break;
                 case '9':
                     element = BIRD;
