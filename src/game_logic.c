@@ -396,12 +396,11 @@ enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int r
     int score = 0;
     enum LeveLResult isLevelWon = QUIT;
     Snoopy snoopy;
+    Ball ball;
 
-    int ballX;
-    int ballY;
+    ball.directionX = 1;
+    ball.directionY = 1;
 
-    int directionY = 1;
-    int directionX = 1;
     printf("%d", level);
     // Time-based ball movement variables
     int ballTimer = 0;
@@ -412,7 +411,7 @@ enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int r
     clock_t lastCheckTime = clock();
 
     char boardGame[ROWS][COLS];
-    readGameBoardElementsFromFile(level, boardGame, &snoopy, &ballX, &ballY);
+    readGameBoardElementsFromFile(level, boardGame, &snoopy, &ball);
 
     clearScreen();
     printf("Level: %d\n\n", level);
@@ -424,7 +423,7 @@ enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int r
     // Get user input for direction
     while (score < 4 && remainingTime >= 0) {
         checkRemainingTimeAndUpdate(&remainingTime, &lastCheckTime);
-        addUpdate(ballY, ballX, BALL, &numberUpdates, updates);
+        addUpdate(ball.y, ball.x, BALL, &numberUpdates, updates);
 
         numberUpdates = 0;
 
@@ -448,8 +447,7 @@ enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int r
         }
 
         if (ballTimer % ballMoveInterval == 0) {
-            updateBallPlacement(boardGame, &ballX, &ballY, &directionX, &directionY, &isLevelWon, updates,
-                                &numberUpdates);
+            updateBallPlacement(boardGame, &ball, &isLevelWon, updates, &numberUpdates);
 
             if (isLevelWon == LOST) {
                 return LOST;
@@ -512,20 +510,19 @@ void displayLevelResult(enum LeveLResult isLevelWon, int level, int *score) {
 }
 
 
-void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *directionX, int *directionY,
-                        enum LeveLResult *isLevelWon) {
-    int nextX = *ballX + *directionX;
-    int nextY = *ballY + *directionY;
+void moveBallDiagonally(char boardGame[10][20], Ball *ball, enum LeveLResult *isLevelWon) {
+    int nextX = ball->x + ball->directionX;
+    int nextY = ball->y + ball->directionY;
     char next;
 
     // Collision checks
     if (nextX < 0 || nextX >= ROWS) {
-        *directionX = -*directionX;
+        ball->directionX = -ball->directionX;
     } else if (nextY < 0 || nextY >= COLS) {
-        *directionY = -*directionY;
+        ball->directionY = -ball->directionY;
     } else if (boardGame[nextX][nextY] == BIRD) {
-        *directionX = -*directionX;
-        *directionY = -*directionY;
+        ball->directionX = -ball->directionX;
+        ball->directionY = -ball->directionY;
     } else if (boardGame[nextX][nextY] == SNOOPY) {
         *isLevelWon = LOST;
         return;
@@ -533,38 +530,38 @@ void moveBallDiagonally(char boardGame[10][20], int *ballX, int *ballY, int *dir
                boardGame[nextX][nextY] == INVINCIBLE_BLOC || boardGame[nextX][nextY] == TRAPPED_BLOC) {
         next = boardGame[nextX][nextY];
 
-        if (boardGame[nextX - *directionX][nextY] == next ||
-            boardGame[nextX + *directionX][nextY] == next)
-            *directionY = -*directionY;
+        if (boardGame[nextX - ball->directionX][nextY] == next ||
+            boardGame[nextX + ball->directionX][nextY] == next)
+            ball->directionY = -ball->directionY;
 
-        else if (boardGame[nextX][nextY + *directionY] == next ||
-                 boardGame[nextX][nextY - *directionY] == next)
-            *directionX = -*directionX;
+        else if (boardGame[nextX][nextY + ball->directionY] == next ||
+                 boardGame[nextX][nextY - ball->directionY] == next)
+            ball->directionX = -ball->directionX;
 
         else {
-            *directionX = -*directionX;
-            *directionY = -*directionY;
+            ball->directionX = -ball->directionX;
+            ball->directionY = -ball->directionY;
         }
-    } else if (boardGame[nextX - *directionX][nextY] == next &&
-               boardGame[nextX][nextY - *directionY] == next) {
-        *directionX = -*directionX;
-        *directionY = -*directionY;
+    } else if (boardGame[nextX - ball->directionX][nextY] == next &&
+               boardGame[nextX][nextY - ball->directionY] == next) {
+        ball->directionX = -ball->directionX;
+        ball->directionY = -ball->directionY;
     }
     // Update ball's position if no collision
-    *ballX += *directionX;
-    *ballY += *directionY;
+    ball->x += ball->directionX;
+    ball->y += ball->directionY;
 }
 
 void
-updateBallPlacement(char boardGame[10][20], int *ballX, int *ballY, int *directionX, int *directionY,
-                    enum LeveLResult *isLevelWon, Update updates[100000], int *numberUpdates) {
-    boardGame[(*ballX)][(*ballY)] = EMPTY;
-    addUpdate((*ballY), (*ballX), EMPTY, numberUpdates, updates);
+updateBallPlacement(char boardGame[10][20], Ball *ball, enum LeveLResult *isLevelWon, Update updates[100000],
+                    int *numberUpdates) {
+    boardGame[(ball->x)][(ball->y)] = EMPTY;
+    addUpdate((ball->y), (ball->x), EMPTY, numberUpdates, updates);
 
-    moveBallDiagonally(boardGame, ballX, ballY, directionX, directionY, isLevelWon);
+    moveBallDiagonally(boardGame, ball, isLevelWon);
 
-    boardGame[(*ballX)][(*ballY)] = BALL;
-    addUpdate((*ballY), (*ballX), BALL, numberUpdates, updates);
+    boardGame[(ball->x)][(ball->y)] = BALL;
+    addUpdate((ball->y), (ball->x), BALL, numberUpdates, updates);
 }
 
 void addUpdate(int x, int y, char newValue, int *index, Update *updates) {
@@ -763,7 +760,7 @@ void moveSnoopy(char (*board)[20], Snoopy *snoopy, char key, int *score, enum Le
     }
 }
 
-void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], Snoopy *snoopy, int *ballX, int *ballY) {
+void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], Snoopy *snoopy, Ball *ball) {
     char element;
     char filename[26]; // Assuming the file names are like "level1.txt", "level2.txt", ..., "level100.txt"
     snprintf(filename, sizeof(filename), "../data/levels/level%d.txt", level);
@@ -804,8 +801,8 @@ void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], Snoopy
                     break;
                 case '8':
                     element = BALL;
-                    *ballX = i;
-                    *ballY = j;
+                    ball->x = i;
+                    ball->y = j;
                     break;
                 default:
                     break;

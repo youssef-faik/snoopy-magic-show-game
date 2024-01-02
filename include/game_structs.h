@@ -16,4 +16,12 @@ typedef struct {
     int y;
 } Snoopy;
 
+typedef struct {
+    int x;
+    int y;
+    int directionX;
+    int directionY;
+} Ball;
+
+
 #endif //SNOOPY_GAME_GAME_STRUCTS_H

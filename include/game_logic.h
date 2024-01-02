@@ -85,12 +85,12 @@ moveSnoopy(char board[10][20], Snoopy *snoopy, char key, int *score, enum LeveLR
            int *numberUpdates, Update updates[]);
 
 void
-updateBallPlacement(char boardGame[10][20], int *ballX, int *ballY, int *directionX, int *directionY,
-                    enum LeveLResult *isLevelWon, Update updates[100000], int *numberUpdates);
+updateBallPlacement(char boardGame[10][20], Ball *ball, enum LeveLResult *isLevelWon, Update updates[100000],
+                    int *numberUpdates);
 
 enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int remainingLives);
 
-void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], Snoopy *snoopy, int *ballX, int *ballY);
+void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], Snoopy *snoopy, Ball *ball);
 
 int isLevelAvailable(int level);
 
