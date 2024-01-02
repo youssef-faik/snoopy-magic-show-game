@@ -11,4 +11,9 @@ typedef struct {
     char newValue;
 } Update;
 
+typedef struct {
+    int x;
+    int y;
+} Snoopy;
+
 #endif //SNOOPY_GAME_GAME_STRUCTS_H

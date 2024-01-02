@@ -395,9 +395,7 @@ void checkRemainingTimeAndUpdate(int *remainingTime, clock_t *lastCheckTime) {
 enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int remainingLives) {
     int score = 0;
     enum LeveLResult isLevelWon = QUIT;
-
-    int snoopyX;
-    int snoopyY;
+    Snoopy snoopy;
 
     int ballX;
     int ballY;
@@ -414,7 +412,7 @@ enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int r
     clock_t lastCheckTime = clock();
 
     char boardGame[ROWS][COLS];
-    readGameBoardElementsFromFile(level, boardGame, &ballX, &ballY, &snoopyX, &snoopyY);
+    readGameBoardElementsFromFile(level, boardGame, &snoopy, &ballX, &ballY);
 
     clearScreen();
     printf("Level: %d\n\n", level);
@@ -445,7 +443,7 @@ enum LeveLResult playLevel(int level, int *globalScore, int *highestScore, int r
 
             }
 
-            moveSnoopy(boardGame, &snoopyX, &snoopyY, key, &score, &isLevelWon, &numberUpdates, updates);
+            moveSnoopy(boardGame, &snoopy, key, &score, &isLevelWon, &numberUpdates, updates);
             fflush(stdin);
         }
 
@@ -594,7 +592,7 @@ void updateElementsDisplay(char (*boardGame)[20], Update *updates, int numberUpd
     moveCursor(0, 18);
 }
 
-void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *score, enum LeveLResult *isLevelWon,
+void moveSnoopy(char (*board)[20], Snoopy *snoopy, char key, int *score, enum LeveLResult *isLevelWon,
                 int *numberUpdates, Update *updates) {
     int number;
     const int SCORE_X = 2;
@@ -602,132 +600,132 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
 
     switch (key) {
         case UP_ARROW:
-            if (*snoopyX > 0) {
-                if (board[*snoopyX - 1][*snoopyY] == BALL || board[*snoopyX - 1][*snoopyY] == TRAPPED_BLOC) {
+            if (snoopy->x > 0) {
+                if (board[snoopy->x - 1][snoopy->y] == BALL || board[snoopy->x - 1][snoopy->y] == TRAPPED_BLOC) {
                     *isLevelWon = LOST;
                     return;
-                } else if (board[*snoopyX - 1][*snoopyY] == BIRD) {
+                } else if (board[snoopy->x - 1][snoopy->y] == BIRD) {
                     (*score)++;
 
                     number = *score;
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
-                } else if (board[*snoopyX - 1][*snoopyY] == BREAKABLE_BLOC) {
+                } else if (board[snoopy->x - 1][snoopy->y] == BREAKABLE_BLOC) {
                     addUpdate(SCORE_X, SCORE_Y, EMPTY, numberUpdates, updates);
                 }
 
-                if (board[*snoopyX - 1][*snoopyY] == PUSHABLE_BLOC && *snoopyX - 1 > 0 &&
-                    board[*snoopyX - 2][*snoopyY] != INVINCIBLE_BLOC
-                    && board[*snoopyX - 2][*snoopyY] != BIRD && board[*snoopyX - 2][*snoopyY] != PUSHABLE_BLOC) {
+                if (board[snoopy->x - 1][snoopy->y] == PUSHABLE_BLOC && snoopy->x - 1 > 0 &&
+                    board[snoopy->x - 2][snoopy->y] != INVINCIBLE_BLOC
+                    && board[snoopy->x - 2][snoopy->y] != BIRD && board[snoopy->x - 2][snoopy->y] != PUSHABLE_BLOC) {
 
-                    board[*snoopyX][*snoopyY] = EMPTY;
-                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[*snoopyX - 1][*snoopyY] = EMPTY;
-                    addUpdate(*snoopyY, *snoopyX - 1, EMPTY, numberUpdates, updates);
-                    board[--(*snoopyX)][*snoopyY] = SNOOPY;
-                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
-                    board[*snoopyX - 1][*snoopyY] = PUSHABLE_BLOC;
-                    addUpdate(*snoopyY, *snoopyX - 1, PUSHABLE_BLOC, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y] = EMPTY;
+                    addUpdate(snoopy->y, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[snoopy->x - 1][snoopy->y] = EMPTY;
+                    addUpdate(snoopy->y, snoopy->x - 1, EMPTY, numberUpdates, updates);
+                    board[--(snoopy->x)][snoopy->y] = SNOOPY;
+                    addUpdate(snoopy->y, snoopy->x, SNOOPY, numberUpdates, updates);
+                    board[snoopy->x - 1][snoopy->y] = PUSHABLE_BLOC;
+                    addUpdate(snoopy->y, snoopy->x - 1, PUSHABLE_BLOC, numberUpdates, updates);
 
                 }
 
-                if (board[*snoopyX - 1][*snoopyY] != INVINCIBLE_BLOC &&
-                    board[*snoopyX - 1][*snoopyY] != PUSHABLE_BLOC) {
-                    board[*snoopyX][*snoopyY] = EMPTY;
-                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[--(*snoopyX)][*snoopyY] = SNOOPY;
-                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                if (board[snoopy->x - 1][snoopy->y] != INVINCIBLE_BLOC &&
+                    board[snoopy->x - 1][snoopy->y] != PUSHABLE_BLOC) {
+                    board[snoopy->x][snoopy->y] = EMPTY;
+                    addUpdate(snoopy->y, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[--(snoopy->x)][snoopy->y] = SNOOPY;
+                    addUpdate(snoopy->y, snoopy->x, SNOOPY, numberUpdates, updates);
                 }
             }
             break;
         case DOWN_ARROW:
-            if (*snoopyX < ROWS - 1) {
-                if (board[*snoopyX + 1][*snoopyY] == BALL || board[*snoopyX + 1][*snoopyY] == TRAPPED_BLOC) {
+            if (snoopy->x < ROWS - 1) {
+                if (board[snoopy->x + 1][snoopy->y] == BALL || board[snoopy->x + 1][snoopy->y] == TRAPPED_BLOC) {
                     *isLevelWon = LOST;
                     return;
                 }
 
-                if (board[*snoopyX + 1][*snoopyY] == BIRD) {
+                if (board[snoopy->x + 1][snoopy->y] == BIRD) {
                     (*score)++;
 
                     number = *score;
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
-                if (board[*snoopyX + 1][*snoopyY] == BREAKABLE_BLOC) {
+                if (board[snoopy->x + 1][snoopy->y] == BREAKABLE_BLOC) {
                     addUpdate(SCORE_X, SCORE_Y, EMPTY, numberUpdates, updates);
                 }
-                if (board[*snoopyX + 1][*snoopyY] == PUSHABLE_BLOC && *snoopyX + 1 < ROWS - 1 &&
-                    board[*snoopyX + 2][*snoopyY] != INVINCIBLE_BLOC
-                    && board[*snoopyX + 2][*snoopyY] != BIRD && board[*snoopyX + 2][*snoopyY] != PUSHABLE_BLOC) {
+                if (board[snoopy->x + 1][snoopy->y] == PUSHABLE_BLOC && snoopy->x + 1 < ROWS - 1 &&
+                    board[snoopy->x + 2][snoopy->y] != INVINCIBLE_BLOC
+                    && board[snoopy->x + 2][snoopy->y] != BIRD && board[snoopy->x + 2][snoopy->y] != PUSHABLE_BLOC) {
 
-                    board[*snoopyX][*snoopyY] = EMPTY;
-                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[*snoopyX + 1][*snoopyY] = EMPTY;
-                    addUpdate(*snoopyY - 1, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[++(*snoopyX)][*snoopyY] = SNOOPY;
-                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
-                    board[*snoopyX + 1][*snoopyY] = PUSHABLE_BLOC;
-                    addUpdate(*snoopyY, *snoopyX + 1, PUSHABLE_BLOC, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y] = EMPTY;
+                    addUpdate(snoopy->y, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[snoopy->x + 1][snoopy->y] = EMPTY;
+                    addUpdate(snoopy->y - 1, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[++(snoopy->x)][snoopy->y] = SNOOPY;
+                    addUpdate(snoopy->y, snoopy->x, SNOOPY, numberUpdates, updates);
+                    board[snoopy->x + 1][snoopy->y] = PUSHABLE_BLOC;
+                    addUpdate(snoopy->y, snoopy->x + 1, PUSHABLE_BLOC, numberUpdates, updates);
                 }
 
-                if (board[*snoopyX + 1][*snoopyY] != INVINCIBLE_BLOC &&
-                    board[*snoopyX + 1][*snoopyY] != PUSHABLE_BLOC) {
-                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[*snoopyX][*snoopyY] = EMPTY;
-                    board[++(*snoopyX)][*snoopyY] = SNOOPY;
-                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                if (board[snoopy->x + 1][snoopy->y] != INVINCIBLE_BLOC &&
+                    board[snoopy->x + 1][snoopy->y] != PUSHABLE_BLOC) {
+                    addUpdate(snoopy->y, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y] = EMPTY;
+                    board[++(snoopy->x)][snoopy->y] = SNOOPY;
+                    addUpdate(snoopy->y, snoopy->x, SNOOPY, numberUpdates, updates);
                 }
             }
             break;
         case LEFT_ARROW:
-            if (*snoopyY > 0) {
-                if (board[*snoopyX][*snoopyY - 1] == BALL || board[*snoopyX][*snoopyY - 1] == TRAPPED_BLOC) {
+            if (snoopy->y > 0) {
+                if (board[snoopy->x][snoopy->y - 1] == BALL || board[snoopy->x][snoopy->y - 1] == TRAPPED_BLOC) {
                     *isLevelWon = LOST;
                     return;
                 }
 
-                if (board[*snoopyX][*snoopyY - 1] == BIRD) {
+                if (board[snoopy->x][snoopy->y - 1] == BIRD) {
                     (*score)++;
 
                     number = *score;
                     char charRepresentation = '0' + number;
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
-                if (board[*snoopyX][*snoopyY - 1] == BREAKABLE_BLOC) {
+                if (board[snoopy->x][snoopy->y - 1] == BREAKABLE_BLOC) {
                     addUpdate(SCORE_X, SCORE_Y, EMPTY, numberUpdates, updates);
                 }
-                if (board[*snoopyX][*snoopyY - 1] == PUSHABLE_BLOC && *snoopyY - 1 > 0 &&
-                    board[*snoopyX][*snoopyY - 2] != INVINCIBLE_BLOC
-                    && board[*snoopyX][*snoopyY - 2] != BIRD && board[*snoopyX][*snoopyY - 2] != PUSHABLE_BLOC) {
+                if (board[snoopy->x][snoopy->y - 1] == PUSHABLE_BLOC && snoopy->y - 1 > 0 &&
+                    board[snoopy->x][snoopy->y - 2] != INVINCIBLE_BLOC
+                    && board[snoopy->x][snoopy->y - 2] != BIRD && board[snoopy->x][snoopy->y - 2] != PUSHABLE_BLOC) {
 
-                    board[*snoopyX][*snoopyY] = EMPTY;
-                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[*snoopyX][*snoopyY - 1] = EMPTY;
-                    addUpdate(*snoopyY - 1, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[(*snoopyX)][--(*snoopyY)] = SNOOPY;
-                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
-                    board[*snoopyX][*snoopyY - 1] = PUSHABLE_BLOC;
-                    addUpdate(*snoopyY - 1, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y] = EMPTY;
+                    addUpdate(snoopy->y, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y - 1] = EMPTY;
+                    addUpdate(snoopy->y - 1, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[(snoopy->x)][--(snoopy->y)] = SNOOPY;
+                    addUpdate(snoopy->y, snoopy->x, SNOOPY, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y - 1] = PUSHABLE_BLOC;
+                    addUpdate(snoopy->y - 1, snoopy->x, PUSHABLE_BLOC, numberUpdates, updates);
                 }
 
-                if (board[*snoopyX][*snoopyY - 1] != INVINCIBLE_BLOC &&
-                    board[*snoopyX][*snoopyY - 1] != PUSHABLE_BLOC) {
-                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[*snoopyX][*snoopyY] = EMPTY;
-                    board[*snoopyX][--(*snoopyY)] = SNOOPY;
-                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                if (board[snoopy->x][snoopy->y - 1] != INVINCIBLE_BLOC &&
+                    board[snoopy->x][snoopy->y - 1] != PUSHABLE_BLOC) {
+                    addUpdate(snoopy->y, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y] = EMPTY;
+                    board[snoopy->x][--(snoopy->y)] = SNOOPY;
+                    addUpdate(snoopy->y, snoopy->x, SNOOPY, numberUpdates, updates);
                 }
             }
             break;
         case RIGHT_ARROW:
-            if (*snoopyY < COLS - 1) {
-                if (board[*snoopyX][*snoopyY + 1] == BALL || board[*snoopyX][*snoopyY + 1] == TRAPPED_BLOC) {
+            if (snoopy->y < COLS - 1) {
+                if (board[snoopy->x][snoopy->y + 1] == BALL || board[snoopy->x][snoopy->y + 1] == TRAPPED_BLOC) {
                     *isLevelWon = LOST;
                     return;
                 }
 
-                if (board[*snoopyX][*snoopyY + 1] == BIRD) {
+                if (board[snoopy->x][snoopy->y + 1] == BIRD) {
                     (*score)++;
 
                     number = *score;
@@ -735,38 +733,37 @@ void moveSnoopy(char (*board)[20], int *snoopyX, int *snoopyY, char key, int *sc
 
                     addUpdate(SCORE_X, SCORE_Y, charRepresentation, numberUpdates, updates);
                 }
-                if (board[*snoopyX][*snoopyY + 1] == BREAKABLE_BLOC) {
+                if (board[snoopy->x][snoopy->y + 1] == BREAKABLE_BLOC) {
 
                     addUpdate(SCORE_X, SCORE_Y, EMPTY, numberUpdates, updates);
                 }
-                if (board[*snoopyX][*snoopyY + 1] == PUSHABLE_BLOC && *snoopyY + 1 < COLS - 1 &&
-                    board[*snoopyX][*snoopyY + 2] != INVINCIBLE_BLOC
-                    && board[*snoopyX][*snoopyY + 2] != BIRD && board[*snoopyX][*snoopyY + 2] != PUSHABLE_BLOC) {
+                if (board[snoopy->x][snoopy->y + 1] == PUSHABLE_BLOC && snoopy->y + 1 < COLS - 1 &&
+                    board[snoopy->x][snoopy->y + 2] != INVINCIBLE_BLOC
+                    && board[snoopy->x][snoopy->y + 2] != BIRD && board[snoopy->x][snoopy->y + 2] != PUSHABLE_BLOC) {
 
-                    board[*snoopyX][*snoopyY] = EMPTY;
-                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[*snoopyX][*snoopyY + 1] = EMPTY;
-                    addUpdate(*snoopyY + 1, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[(*snoopyX)][++(*snoopyY)] = SNOOPY;
-                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
-                    board[*snoopyX][*snoopyY + 1] = PUSHABLE_BLOC;
-                    addUpdate(*snoopyY + 1, *snoopyX, PUSHABLE_BLOC, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y] = EMPTY;
+                    addUpdate(snoopy->y, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y + 1] = EMPTY;
+                    addUpdate(snoopy->y + 1, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[(snoopy->x)][++(snoopy->y)] = SNOOPY;
+                    addUpdate(snoopy->y, snoopy->x, SNOOPY, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y + 1] = PUSHABLE_BLOC;
+                    addUpdate(snoopy->y + 1, snoopy->x, PUSHABLE_BLOC, numberUpdates, updates);
                 }
 
-                if (board[*snoopyX][*snoopyY + 1] != INVINCIBLE_BLOC &&
-                    board[*snoopyX][*snoopyY + 1] != PUSHABLE_BLOC) {
-                    addUpdate(*snoopyY, *snoopyX, EMPTY, numberUpdates, updates);
-                    board[*snoopyX][*snoopyY] = EMPTY;
-                    board[*snoopyX][++(*snoopyY)] = SNOOPY;
-                    addUpdate(*snoopyY, *snoopyX, SNOOPY, numberUpdates, updates);
+                if (board[snoopy->x][snoopy->y + 1] != INVINCIBLE_BLOC &&
+                    board[snoopy->x][snoopy->y + 1] != PUSHABLE_BLOC) {
+                    addUpdate(snoopy->y, snoopy->x, EMPTY, numberUpdates, updates);
+                    board[snoopy->x][snoopy->y] = EMPTY;
+                    board[snoopy->x][++(snoopy->y)] = SNOOPY;
+                    addUpdate(snoopy->y, snoopy->x, SNOOPY, numberUpdates, updates);
                 }
             }
             break;
     }
 }
 
-void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *ballX, int *ballY, int *snoopyX,
-                                   int *snoopyY) {
+void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], Snoopy *snoopy, int *ballX, int *ballY) {
     char element;
     char filename[26]; // Assuming the file names are like "level1.txt", "level2.txt", ..., "level100.txt"
     snprintf(filename, sizeof(filename), "../data/levels/level%d.txt", level);
@@ -802,8 +799,8 @@ void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *b
                     break;
                 case '7':
                     element = SNOOPY;
-                    *snoopyX = i;
-                    *snoopyY = j;
+                    snoopy->x = i;
+                    snoopy->y = j;
                     break;
                 case '8':
                     element = BALL;

@@ -212,3 +212,4 @@ obj/
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/c,cmake,clion,codeblocks,visualstudiocode
+/CMakeLists.txt
