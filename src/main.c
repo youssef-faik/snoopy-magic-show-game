@@ -876,7 +876,7 @@ void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *b
                                    int *snoopyY) {
     char element;
     char filename[20]; // Assuming the file names are like "level1.txt", "level2.txt", etc.
-    sprintf(filename, "../level/level%d.txt", level); // Generating filename based on level
+    sprintf(filename, "../data/levels/level%d.txt", level); // Generating filename based on level
 
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -928,7 +928,7 @@ void readGameBoardElementsFromFile(int level, char boardGame[ROWS][COLS], int *b
 
 int isLevelAvailable(int level) {
     char filename[20];
-    sprintf(filename, "../level/level%d.txt", level);
+    sprintf(filename, "../data/levels/level%d.txt", level);
 
     FILE *file = fopen(filename, "r");
     if (file) {
@@ -952,7 +952,7 @@ void displayAvailableLevels() {
 void loadPasswordsFile(char passwords[MAX_NUM_PASSWORDS][MAX_PASSWORD_LENGTH]) {
     int numPasswords = 0;
 
-    const char *file_path = "../level/passwords.txt";
+    const char *file_path = "../data/levels/level_passwords.txt";
 
     FILE *file = fopen(file_path, "r");
     if (file == NULL) {
@@ -979,7 +979,7 @@ void saveNewHighestScore(int score) {
     int lastValue;
 
         // If file doesn't exist, create it and write the new value
-        file = fopen("score.txt", "w");
+        file = fopen("../data/high_score.txt", "w");
         fprintf(file, "%d", score);
         fclose(file);
 }
@@ -989,7 +989,7 @@ int readHighestScore() {
     int highestScore = 0;
 
     // Open file for reading
-    file = fopen("score.txt", "r");
+    file = fopen("../data/high_score.txt", "r");
     if (file == NULL) {
         return highestScore; // Return -1 to indicate an error or no score available
     }
